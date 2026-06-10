@@ -24,14 +24,17 @@ pub fn draw(ctx: &mut AppContext) {
 
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
 
-    let base_rect = Rect::new(8, 8, 120, 18);
+    let base_rect = Rect::new(0, 5, 120, 18);
     const LINE_HEIGHT: i32 = 20;
 
-    ui.label(base_rect, &ymd_text).draw();
+    ui.label(base_rect, &ymd_text).center().draw();
 
     let hms_rect = base_rect.offset(0, LINE_HEIGHT);
-    ui.label(hms_rect, &hms_text).font(ctx.font_large).draw();
+    ui.label(hms_rect, &hms_text)
+        .font(ctx.font_large)
+        .center()
+        .draw();
 
     let menu_rect = hms_rect.offset(0, LINE_HEIGHT);
-    ui.label(menu_rect, "[Click] to Menu").draw();
+    ui.label(menu_rect, "[Click] to Menu").center().draw();
 }
