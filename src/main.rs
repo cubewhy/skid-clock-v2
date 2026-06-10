@@ -120,8 +120,8 @@ fn main() -> anyhow::Result<()> {
     let mut display_1_3 = Sh1106::new(sh_interface);
     display_1_3.init().map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
-    let font = FontRenderer::new::<fonts::u8g2_font_pixzillav1_tr>();
-    let font_large = FontRenderer::new::<fonts::u8g2_font_ncenB14_tr>();
+    let font = FontRenderer::new::<fonts::u8g2_font_6x10_tr>();
+    let font_large = FontRenderer::new::<fonts::u8g2_font_10x20_tr>();
 
     let start_time = Instant::now();
 
