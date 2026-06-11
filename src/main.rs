@@ -128,7 +128,7 @@ fn main() -> anyhow::Result<()> {
     let start_time = Instant::now();
 
     let mut last_tick = Instant::now();
-    let target_frame_time = Duration::from_millis(50); // 20fps
+    let target_frame_time = Duration::from_millis(33); // 20fps
 
     let mut active_app = App::Clock;
 
@@ -205,9 +205,14 @@ fn main() -> anyhow::Result<()> {
             app_ctx.display_0_96.flush().ok();
             app_ctx.display_1_3.flush().ok();
 
-            last_tick = now;
+            last_tick = Instant::now();
         }
 
-        thread::sleep(Duration::from_millis(10));
+        let frame_elapsed = Instant::now().duration_since(last_tick);
+        if frame_elapsed < target_frame_time {
+            thread::sleep(target_frame_time - frame_elapsed);
+        } else {
+            thread::yield_now();
+        }
     }
 }
