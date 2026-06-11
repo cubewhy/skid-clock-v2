@@ -1,7 +1,12 @@
 use crate::{
     app_context::AppContext,
     apps::App,
-    ui::{Ui, ctx::UiEvents},
+    display::UnifiedDisplay,
+    ui::{
+        Rect, Ui,
+        ctx::UiEvents,
+        layout::{FlexDirection, FlexNode},
+    },
 };
 
 pub fn update(event: UiEvents, selected_index: &mut i32) -> Option<App> {
@@ -9,7 +14,7 @@ pub fn update(event: UiEvents, selected_index: &mut i32) -> Option<App> {
         *selected_index -= 1;
     }
 
-    if event.contains(UiEvents::PRIMARY_DOWN) && *selected_index < 2 {
+    if event.contains(UiEvents::PRIMARY_DOWN) && *selected_index < 3 {
         *selected_index += 1;
     }
 
@@ -21,12 +26,44 @@ pub fn update(event: UiEvents, selected_index: &mut i32) -> Option<App> {
 }
 
 pub fn draw(ctx: &mut AppContext, selected_index: i32) {
+    let resolution = ctx.display_1_3.resolution();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
+    let screen_rect = Rect::new(0, 0, resolution.width, resolution.height);
 
-    // let rect = Rect::new(0, 0, ?, ?);
+    let mut header_rect = Rect::default();
+    let mut list_rect = Rect::default();
 
-    // TODO: add flexbox in layout.rs
+    FlexNode::new(FlexDirection::Column)
+        .child(
+            FlexNode::new(FlexDirection::Row)
+                .with_size(screen_rect.width, 20)
+                .assign_to(&mut header_rect),
+        )
+        .child(
+            FlexNode::new(FlexDirection::Row)
+                .with_flex(1)
+                .assign_to(&mut list_rect),
+        )
+        .layout(screen_rect);
 
-    // TODO: draw line/rect api in Ui
-    // ui.label(rect, "SYSTEM MENU");
+    ui.label(header_rect, "SYSTEM MENU").center().draw();
+
+    let menu_items = ["Realtime Clock", "Time Tools", "Arcade Games", "Settings"];
+    let item_height = 10;
+    let visible_count = 4;
+
+    ui.scroll_list(
+        list_rect,
+        &menu_items,
+        selected_index.max(0) as usize,
+        visible_count,
+        item_height,
+        |ui_ctx, item_rect, item_name, is_selected| {
+            if is_selected {
+                ui_ctx.label(item_rect, &format!("> {}", item_name)).draw();
+            } else {
+                ui_ctx.label(item_rect, &format!("  {}", item_name)).draw();
+            }
+        },
+    );
 }
