@@ -18,8 +18,16 @@ pub fn update(event: UiEvents, selected_index: &mut i32) -> Option<App> {
         *selected_index += 1;
     }
 
-    if event.contains(UiEvents::PRIMARY_CONFIRM) {
-        return (*selected_index == 0).then_some(App::Clock);
+    if event.contains(UiEvents::BACK) {
+        return Some(App::Clock);
+    }
+
+    if event.intersects(UiEvents::PRIMARY_CONFIRM | UiEvents::PRIMARY_RIGHT) {
+        let app = match selected_index {
+            0 => App::Clock,
+            _ => return None,
+        };
+        return Some(app);
     }
 
     None
