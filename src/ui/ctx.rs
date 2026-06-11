@@ -1,37 +1,23 @@
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::BinaryColor};
 use u8g2_fonts::FontRenderer;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UiEvent {
-    Nothing,
-    PrimaryUp,
-    PrimaryDown,
-    PrimaryLeft,
-    PrimaryRight,
-    PrimaryConfirm,
-    Back,
+use bitflags::bitflags;
 
-    SecondaryUp,
-    SecondaryRight,
-    SecondaryLeft,
-    SecondaryDown,
-    SecondaryConfirm,
-}
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    pub struct UiEvents: u16 {
+        const PRIMARY_UP         = 1 << 0;  // 0x0001
+        const PRIMARY_DOWN       = 1 << 1;  // 0x0002
+        const PRIMARY_LEFT       = 1 << 2;  // 0x0004
+        const PRIMARY_RIGHT      = 1 << 3;  // 0x0008
+        const PRIMARY_CONFIRM    = 1 << 4;  // 0x0010
+        const BACK               = 1 << 5;  // 0x0020
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct UiInputConfig {
-    pub confirm_action: UiEvent,
-    pub up_action: UiEvent,
-    pub down_action: UiEvent,
-}
-
-impl Default for UiInputConfig {
-    fn default() -> Self {
-        Self {
-            confirm_action: UiEvent::PrimaryConfirm,
-            up_action: UiEvent::PrimaryUp,
-            down_action: UiEvent::PrimaryDown,
-        }
+        const SECONDARY_UP       = 1 << 6;  // 0x0040
+        const SECONDARY_DOWN     = 1 << 7;  // 0x0080
+        const SECONDARY_LEFT     = 1 << 8;  // 0x0100
+        const SECONDARY_RIGHT    = 1 << 9;  // 0x0200
+        const SECONDARY_CONFIRM  = 1 << 10; // 0x0400
     }
 }
 

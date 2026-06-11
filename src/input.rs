@@ -1,6 +1,6 @@
 use esp_idf_svc::hal::gpio::{AnyInputPin, Input, PinDriver, Pull};
 
-use crate::ui::UiEvent;
+use crate::ui::ctx::UiEvents;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JoystickRotation {
@@ -102,31 +102,44 @@ impl<'a> InputManager<'a> {
         }
     }
 
-    pub fn get_ui_events(&self, joy_data: JoystickData) -> UiEvent {
+    pub fn get_ui_events(&self, joy_data: JoystickData) -> UiEvents {
+        let mut events = UiEvents::empty();
+
         if self.btn_confirm.is_low() {
-            UiEvent::PrimaryConfirm
-        } else if self.btn_back.is_low() {
-            UiEvent::Back
-        } else if self.btn_k.is_low() {
-            UiEvent::PrimaryUp
-        } else if self.btn_j.is_low() {
-            UiEvent::PrimaryDown
-        } else if self.btn_h.is_low() {
-            UiEvent::PrimaryLeft
-        } else if self.btn_l.is_low() {
-            UiEvent::PrimaryRight
-        } else if joy_data.y > 0.5 {
-            UiEvent::SecondaryUp
-        } else if joy_data.y < -0.5 {
-            UiEvent::SecondaryDown
-        } else if joy_data.x < -0.5 {
-            UiEvent::SecondaryLeft
-        } else if joy_data.x > 0.5 {
-            UiEvent::SecondaryRight
-        } else if joy_data.is_pressed {
-            UiEvent::SecondaryConfirm
-        } else {
-            UiEvent::Nothing
+            events.insert(UiEvents::PRIMARY_CONFIRM);
         }
+        if self.btn_back.is_low() {
+            events.insert(UiEvents::BACK);
+        }
+        if self.btn_k.is_low() {
+            events.insert(UiEvents::PRIMARY_UP);
+        }
+        if self.btn_j.is_low() {
+            events.insert(UiEvents::PRIMARY_DOWN);
+        }
+        if self.btn_h.is_low() {
+            events.insert(UiEvents::PRIMARY_LEFT);
+        }
+        if self.btn_l.is_low() {
+            events.insert(UiEvents::PRIMARY_RIGHT);
+        }
+
+        if joy_data.y > 0.5 {
+            events.insert(UiEvents::SECONDARY_UP);
+        } else if joy_data.y < -0.5 {
+            events.insert(UiEvents::SECONDARY_DOWN);
+        }
+
+        if joy_data.x < -0.5 {
+            events.insert(UiEvents::SECONDARY_LEFT);
+        } else if joy_data.x > 0.5 {
+            events.insert(UiEvents::SECONDARY_RIGHT);
+        }
+
+        if joy_data.is_pressed {
+            events.insert(UiEvents::SECONDARY_CONFIRM);
+        }
+
+        events
     }
 }

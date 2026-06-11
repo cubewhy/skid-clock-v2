@@ -36,6 +36,7 @@ embedded-graphics = "0.8.2"
 u8g2-fonts = "0.8"
 embedded-hal-bus = "0.3"
 display-interface = "*"
+bitflags = "2.13.0"
 
 ssd1306 = "0.10"
 mini-oled = "0.1"

@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use crate::{
     display::{Sh1106Unified, Ssd1306Unified},
     input::InputManager,
     rtc::ds1302::Ds1302,
-    ui::UiEvent,
+    ui::ctx::UiEvents,
 };
 
 pub struct AppContext<'a, 'b> {
@@ -15,13 +17,12 @@ pub struct AppContext<'a, 'b> {
     pub font: &'a u8g2_fonts::FontRenderer,
     pub font_large: &'a u8g2_fonts::FontRenderer,
 
-    pub input: &'a mut InputManager<'static>,
+    pub input: Arc<InputManager<'static>>,
 
     pub uptime_secs: u64,
-    pub current_event: UiEvent,
 }
 
 pub struct UpdateContext<'a, 'b> {
-    pub event: UiEvent,
+    pub events: UiEvents,
     pub rtc: &'a mut Ds1302<'b>,
 }

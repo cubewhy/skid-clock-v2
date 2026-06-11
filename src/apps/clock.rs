@@ -1,20 +1,20 @@
 use crate::{
     app_context::AppContext,
     apps::App,
-    ui::{Rect, Ui, UiEvent},
+    ui::{Rect, Ui, ctx::UiEvents},
 };
 
-pub fn update(event: UiEvent) -> Option<App> {
-    use UiEvent::*;
+pub fn update(event: UiEvents) -> Option<App> {
+    let trigger_mask = UiEvents::PRIMARY_UP
+        | UiEvents::PRIMARY_DOWN
+        | UiEvents::PRIMARY_LEFT
+        | UiEvents::PRIMARY_RIGHT
+        | UiEvents::PRIMARY_CONFIRM
+        | UiEvents::BACK;
 
-    if matches!(
-        event,
-        PrimaryUp | PrimaryConfirm | PrimaryDown | PrimaryLeft | PrimaryRight | Back
-    ) {
-        Some(App::MainMenu { selected_index: 0 })
-    } else {
-        None
-    }
+    event
+        .intersects(trigger_mask)
+        .then_some(App::MainMenu { selected_index: 0 })
 }
 
 pub fn draw(ctx: &mut AppContext) {

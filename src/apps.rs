@@ -10,10 +10,10 @@ pub enum App {
 
 impl App {
     pub fn update(&mut self, ctx: &mut UpdateContext) -> Option<App> {
-        let event = ctx.event;
+        let events = ctx.events;
         match self {
-            App::MainMenu { selected_index } => main_menu::update(event, selected_index),
-            App::Clock => clock::update(event),
+            App::MainMenu { selected_index } => main_menu::update(events, selected_index),
+            App::Clock => clock::update(events),
         }
     }
 

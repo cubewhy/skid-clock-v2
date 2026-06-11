@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
 };
@@ -11,6 +12,7 @@ use crate::{
     input::{InputManager, JoystickRotation},
     pin_config::{I2cDisplayPinConfig, JoyPinConfig, KeyboardPinConfig, PinConfig, RtcPinConfig},
     rtc::{ds1302::Ds1302, sync_time},
+    ui::UiEvents,
 };
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::BinaryColor};
 use embedded_hal_bus::i2c::RefCellDevice;
@@ -83,11 +85,11 @@ fn main() -> anyhow::Result<()> {
 
     sync_time(&mut rtc_driver)?;
 
-    let mut input_manager = InputManager::new(
+    let input_manager = Arc::new(InputManager::new(
         pin_config.keyboard,
         pin_config.joy,
         JoystickRotation::Deg270,
-    )?;
+    )?);
 
     let i2c_cfg = I2cConfig::new().baudrate(KiloHertz::from(100).into());
     let i2c_driver = I2cDriver::new(
@@ -130,21 +132,60 @@ fn main() -> anyhow::Result<()> {
 
     let mut active_app = App::Clock;
 
+    let shared_events = Arc::new(Mutex::new(Vec::<UiEvents>::new()));
+    let input_events = Arc::clone(&shared_events);
+
+    // input listener thread
+    let input_manager_1 = input_manager.clone();
+    thread::spawn(move || {
+        let mut last_raw_events = UiEvents::empty();
+        loop {
+            let joy_data = input_manager_1.read_joystick();
+            let current_raw_events = input_manager_1.get_ui_events(joy_data);
+
+            let just_pressed = current_raw_events & !last_raw_events;
+            if !just_pressed.is_empty()
+                && let Ok(mut events) = input_events.lock()
+            {
+                events.push(just_pressed);
+            }
+
+            last_raw_events = current_raw_events;
+            thread::sleep(Duration::from_millis(10));
+        }
+    });
+
     loop {
-        let joy_data = input_manager.read_joystick();
-        let current_event = input_manager.get_ui_events(joy_data);
-
-        let mut update_ctx = UpdateContext {
-            event: current_event,
-            rtc: &mut rtc_driver,
-        };
-
         let now = Instant::now();
         let elapsed = now.duration_since(last_tick);
 
         if elapsed >= target_frame_time {
-            if let Some(new_app) = active_app.update(&mut update_ctx) {
-                active_app = new_app;
+            let frame_events = {
+                if let Ok(mut events_guard) = shared_events.lock() {
+                    std::mem::take(&mut *events_guard)
+                } else {
+                    Vec::new()
+                }
+            };
+
+            if frame_events.is_empty() {
+                let mut update_ctx = UpdateContext {
+                    events: UiEvents::empty(),
+                    rtc: &mut rtc_driver,
+                };
+                if let Some(new_app) = active_app.update(&mut update_ctx) {
+                    active_app = new_app;
+                }
+            } else {
+                for event in frame_events {
+                    let mut update_ctx = UpdateContext {
+                        events: event,
+                        rtc: &mut rtc_driver,
+                    };
+                    if let Some(new_app) = active_app.update(&mut update_ctx) {
+                        active_app = new_app;
+                    }
+                }
             }
 
             let mut app_ctx = AppContext {
@@ -153,8 +194,7 @@ fn main() -> anyhow::Result<()> {
                 font: &font,
                 font_large: &font_large,
                 uptime_secs: start_time.elapsed().as_secs(),
-                input: &mut input_manager,
-                current_event,
+                input: input_manager.clone(),
             };
 
             app_ctx.display_0_96.clear(BinaryColor::Off).ok();
