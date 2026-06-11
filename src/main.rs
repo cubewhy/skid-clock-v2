@@ -91,7 +91,7 @@ fn main() -> anyhow::Result<()> {
         JoystickRotation::Deg270,
     )?);
 
-    let i2c_cfg = I2cConfig::new().baudrate(KiloHertz::from(100).into());
+    let i2c_cfg = I2cConfig::new().baudrate(KiloHertz::from(400).into());
     let i2c_driver = I2cDriver::new(
         peripherals.i2c0,
         pin_config.i2c_display.sda,
@@ -128,7 +128,7 @@ fn main() -> anyhow::Result<()> {
     let start_time = Instant::now();
 
     let mut last_tick = Instant::now();
-    let target_frame_time = Duration::from_millis(16); // 60fps
+    let target_frame_time = Duration::from_millis(50); // 20fps
 
     let mut active_app = App::Clock;
 
