@@ -1,11 +1,18 @@
-use crate::app_context::{AppContext, UpdateContext};
+use crate::{
+    app_context::{AppContext, UpdateContext},
+    apps::settings::SettingsState,
+};
 
 mod clock;
 mod main_menu;
+mod settings;
 
 pub enum App {
     Clock,
     MainMenu { selected_index: i32 },
+    TimeToolsMenu,
+    GamesMenu,
+    Settings(SettingsState),
 }
 
 impl App {
@@ -14,6 +21,9 @@ impl App {
         match self {
             App::MainMenu { selected_index } => main_menu::update(events, selected_index),
             App::Clock => clock::update(events),
+            App::TimeToolsMenu => Some(App::MainMenu { selected_index: 0 }),
+            App::GamesMenu => Some(App::MainMenu { selected_index: 0 }),
+            App::Settings(state) => settings::update(events, ctx.rtc, state),
         }
     }
 
@@ -21,6 +31,9 @@ impl App {
         match self {
             App::MainMenu { selected_index } => main_menu::draw(ctx, *selected_index),
             App::Clock => clock::draw(ctx),
+            App::TimeToolsMenu => {}
+            App::GamesMenu => {}
+            App::Settings(state) => settings::draw(ctx, state),
         }
         Ok(())
     }
