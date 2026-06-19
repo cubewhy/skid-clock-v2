@@ -1,4 +1,7 @@
-use embedded_graphics::geometry::Point;
+use embedded_graphics::{
+    geometry::{Point, Size},
+    primitives::Rectangle,
+};
 
 use std::vec::Vec;
 
@@ -33,6 +36,13 @@ impl Rect {
             && point.x < self.x + self.width as i32
             && point.y >= self.y
             && point.y < self.y + self.height as i32
+    }
+
+    pub fn to_rectangle(self) -> Rectangle {
+        Rectangle::new(
+            Point::new(self.x, self.y),
+            Size::new(self.width, self.height),
+        )
     }
 }
 
