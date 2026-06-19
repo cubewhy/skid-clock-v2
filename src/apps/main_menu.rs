@@ -11,7 +11,16 @@ use crate::{
     },
 };
 
-pub fn update(ctx: &UpdateContext, selected_index: &mut i32) -> Option<App> {
+#[derive(Default)]
+pub struct MainMenuState {
+    pub selected_index: u8,
+    pub tick: u32,
+}
+
+pub fn update(ctx: &UpdateContext, state: &mut MainMenuState) -> Option<App> {
+    state.tick += 1;
+
+    let selected_index = &mut state.selected_index;
     let events = ctx.menu_events;
     if events.contains(UiEvents::UP) {
         if *selected_index > 0 {
@@ -33,7 +42,7 @@ pub fn update(ctx: &UpdateContext, selected_index: &mut i32) -> Option<App> {
         return Some(App::Clock);
     }
 
-    if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_3 | UiEvents::RIGHT) {
+    if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
         let app = match selected_index {
             0 => App::Clock,
             1 => App::TimeToolsMenu,
@@ -47,7 +56,7 @@ pub fn update(ctx: &UpdateContext, selected_index: &mut i32) -> Option<App> {
     None
 }
 
-pub fn draw(ctx: &mut AppContext, selected_index: i32) {
+pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
     let resolution = ctx.display_1_3.resolution();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
     let screen_rect = Rect::new(0, 0, resolution.width, resolution.height);
@@ -99,7 +108,7 @@ pub fn draw(ctx: &mut AppContext, selected_index: i32) {
     ui.scroll_list(
         list_rect,
         &menu_items,
-        selected_index.max(0) as usize,
+        state.selected_index as usize,
         visible_count,
         item_height,
         |ui_ctx, item_rect, item_name, is_selected| {
@@ -120,7 +129,10 @@ pub fn draw(ctx: &mut AppContext, selected_index: i32) {
         BinaryColor::On,
     );
 
-    ui.label(footer_rect, "cubewhy/skid-clock-v2")
-        .center()
-        .draw();
+    ui.label(
+        footer_rect,
+        "gh@cubewhy/skid-clock-v2 - LICENSED UNDER GPL-3.0 - Open Source Hardware \\ Nya~",
+    )
+    .scroll(state.tick, 5)
+    .draw();
 }

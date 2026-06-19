@@ -11,7 +11,7 @@ pub fn update(ctx: &UpdateContext) -> Option<App> {
 
     ctx.menu_events
         .intersects(trigger_mask)
-        .then_some(App::MainMenu { selected_index: 0 })
+        .then_some(App::main_menu())
 }
 
 pub fn draw(ctx: &mut AppContext) {
