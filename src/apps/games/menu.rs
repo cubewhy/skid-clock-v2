@@ -14,16 +14,18 @@ pub enum GamesMenuItem {
     Snake,
     Tetris,
     Pong,
+    Dino,
 }
 
 impl GamesMenuItem {
-    const ALL: &[Self] = &[Self::Snake, Self::Tetris, Self::Pong];
+    const ALL: &[Self] = &[Self::Snake, Self::Tetris, Self::Pong, Self::Dino];
 
     const fn title(&self) -> &'static str {
         match self {
             Self::Snake => "Snake Game",
             Self::Tetris => "Tetris Block",
             Self::Pong => "Retro Pong",
+            Self::Dino => "chrome://dino",
         }
     }
 
@@ -32,6 +34,7 @@ impl GamesMenuItem {
             Self::Snake => App::snake_game(),
             Self::Tetris => App::tetris_game(),
             Self::Pong => App::pong_game(),
+            Self::Dino => App::dino_game(),
         }
     }
 }
