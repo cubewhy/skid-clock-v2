@@ -378,7 +378,7 @@ fn hud_format(buf: &mut [u8], score: i32, time_left: i32) -> &str {
         buf[score_start..idx].reverse();
     }
 
-    while idx < 16 {
+    while idx < 10 {
         buf[idx] = b' ';
         idx += 1;
     }
