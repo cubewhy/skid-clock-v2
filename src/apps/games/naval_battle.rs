@@ -131,7 +131,7 @@ impl NavalBattleState {
 
 pub fn update(ctx: &mut UpdateContext, state: &mut NavalBattleState) -> Option<App> {
     if ctx.menu_events.contains(UiEvents::KEY_ESC) {
-        return Some(App::main_menu());
+        return Some(App::games_menu());
     }
 
     let clicked =
@@ -140,7 +140,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NavalBattleState) -> Option<A
     if state.winner != 0 {
         if clicked {
             state.init_naval_game();
-            return Some(App::main_menu());
+            return Some(App::games_menu());
         }
         return None;
     }
