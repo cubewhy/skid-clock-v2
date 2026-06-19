@@ -1,6 +1,7 @@
 pub mod dino;
 pub mod jump_jump;
 pub mod menu;
+pub mod naval_battle;
 pub mod pong;
 pub mod snake;
 pub mod stack;

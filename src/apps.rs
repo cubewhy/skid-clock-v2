@@ -5,6 +5,7 @@ use crate::{
             dino::{self, DinoState},
             jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
+            naval_battle::{self, NavalBattleState},
             pong::{self, PongState},
             snake::{self, SnakeState},
             stack::{self, StackState},
@@ -48,6 +49,7 @@ pub enum App {
     Target(TargetState),
     JumpJump(JumpJumpState),
     WhacMole(WhacState),
+    NavalBattle(NavalBattleState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -71,6 +73,7 @@ impl App {
             App::Target(state) => target::update(ctx, state),
             App::JumpJump(state) => jump_jump::update(ctx, state),
             App::WhacMole(state) => whac_mole::update(ctx, state),
+            App::NavalBattle(state) => naval_battle::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -93,6 +96,7 @@ impl App {
             App::Target(state) => target::draw(ctx, state),
             App::JumpJump(state) => jump_jump::draw(ctx, state),
             App::WhacMole(state) => whac_mole::draw(ctx, state),
+            App::NavalBattle(state) => naval_battle::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -160,5 +164,9 @@ impl App {
 
     fn whac_mole_game() -> App {
         Self::WhacMole(Default::default())
+    }
+
+    fn naval_battle_game() -> App {
+        Self::NavalBattle(Default::default())
     }
 }
