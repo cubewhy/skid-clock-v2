@@ -3,4 +3,5 @@ pub mod menu;
 pub mod pong;
 pub mod snake;
 pub mod stack;
+pub mod stick_needle;
 pub mod tetris;

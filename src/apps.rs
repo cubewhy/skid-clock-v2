@@ -7,6 +7,7 @@ use crate::{
             pong::{self, PongState},
             snake::{self, SnakeState},
             stack::{self, StackState},
+            stick_needle::{self, StickNeedleState},
             tetris::{self, TetrisState},
         },
         main_menu::MainMenuState,
@@ -40,6 +41,7 @@ pub enum App {
     Pong(PongState),
     Dino(DinoState),
     Stack(StackState),
+    StickNeedle(StickNeedleState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -59,6 +61,7 @@ impl App {
             App::Pong(state) => pong::update(ctx, state),
             App::Dino(state) => dino::update(ctx, state),
             App::Stack(state) => stack::update(ctx, state),
+            App::StickNeedle(state) => stick_needle::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -77,6 +80,7 @@ impl App {
             App::Pong(state) => pong::draw(ctx, state),
             App::Dino(state) => dino::draw(ctx, state),
             App::Stack(state) => stack::draw(ctx, state),
+            App::StickNeedle(state) => stick_needle::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -128,5 +132,9 @@ impl App {
 
     fn stack_game() -> App {
         Self::Stack(Default::default())
+    }
+
+    fn stick_needle_game() -> App {
+        Self::StickNeedle(Default::default())
     }
 }
