@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::{
     display::{Sh1106Unified, Ssd1306Unified},
     input::InputManager,
@@ -17,7 +15,7 @@ pub struct AppContext<'a, 'b> {
     pub font: &'a u8g2_fonts::FontRenderer,
     pub font_large: &'a u8g2_fonts::FontRenderer,
 
-    pub input: Arc<InputManager<'static>>,
+    pub input: &'a InputManager<'static>,
 
     pub uptime_secs: u64,
 }

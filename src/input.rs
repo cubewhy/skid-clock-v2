@@ -1,6 +1,5 @@
-use esp_idf_svc::hal::gpio::{AnyInputPin, Input, PinDriver, Pull};
-
 use crate::ui::ctx::UiEvents;
+use esp_idf_svc::hal::gpio::{AnyInputPin, Input, Output, PinDriver, Pull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JoystickRotation {
@@ -17,32 +16,111 @@ pub struct JoystickData {
     pub is_pressed: bool,
 }
 
+impl JoystickData {
+    pub fn get_events(&self) -> UiEvents {
+        let mut events = UiEvents::empty();
+
+        if self.y > 0.5 {
+            events.insert(UiEvents::UP);
+        } else if self.y < -0.5 {
+            events.insert(UiEvents::DOWN);
+        }
+
+        if self.x < -0.5 {
+            events.insert(UiEvents::LEFT);
+        } else if self.x > 0.5 {
+            events.insert(UiEvents::RIGHT);
+        }
+
+        if self.is_pressed {
+            events.insert(UiEvents::CONFIRM);
+        }
+
+        events
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct KeyStates {
+    pub esc: bool,
+    pub btn_1: bool,
+    pub btn_2: bool,
+    pub btn_3: bool,
+    pub btn_4: bool,
+    pub btn_5: bool,
+    pub btn_6: bool,
+    pub btn_7: bool,
+}
+
+impl KeyStates {
+    pub fn get_events(&self) -> UiEvents {
+        let mut events = UiEvents::empty();
+
+        if self.esc {
+            events.insert(UiEvents::KEY_ESC);
+        }
+        if self.btn_1 {
+            events.insert(UiEvents::KEY_1);
+        }
+        if self.btn_2 {
+            events.insert(UiEvents::KEY_2);
+        }
+        if self.btn_3 {
+            events.insert(UiEvents::KEY_3);
+        }
+        if self.btn_4 {
+            events.insert(UiEvents::KEY_4);
+        }
+        if self.btn_5 {
+            events.insert(UiEvents::KEY_5);
+        }
+        if self.btn_6 {
+            events.insert(UiEvents::KEY_6);
+        }
+        if self.btn_7 {
+            events.insert(UiEvents::KEY_7);
+        }
+
+        events
+    }
+}
+
 pub struct InputManager<'a> {
-    pub btn_h: PinDriver<'a, Input>,
-    pub btn_j: PinDriver<'a, Input>,
-    pub btn_k: PinDriver<'a, Input>,
-    pub btn_l: PinDriver<'a, Input>,
-    pub btn_confirm: PinDriver<'a, Input>,
-    pub btn_back: PinDriver<'a, Input>,
+    pub rows: [PinDriver<'a, Output>; 2],
+    pub cols: [PinDriver<'a, Input>; 4],
+
     pub btn_joy_sw: PinDriver<'a, Input>,
 
     pub joy_x_pin: AnyInputPin<'a>,
     pub joy_y_pin: AnyInputPin<'a>,
     pub joy_rotation: JoystickRotation,
+
+    pub key_states: KeyStates,
 }
 
 impl<'a> InputManager<'a> {
-    pub fn new(
-        keyboard: crate::pin_config::KeyboardPinConfig,
+    pub fn build(
+        keyboard: crate::pin_config::KeyboardMatrixConfig,
         joy: crate::pin_config::JoyPinConfig,
         rotation: JoystickRotation,
     ) -> Result<Self, anyhow::Error> {
-        let btn_h = PinDriver::input(keyboard.h, Pull::Up)?;
-        let btn_j = PinDriver::input(keyboard.j, Pull::Up)?;
-        let btn_k = PinDriver::input(keyboard.k, Pull::Up)?;
-        let btn_l = PinDriver::input(keyboard.l, Pull::Up)?;
-        let btn_confirm = PinDriver::input(keyboard.confirm, Pull::Up)?;
-        let btn_back = PinDriver::input(keyboard.back, Pull::Up)?;
+        let [row0, row1] = keyboard.rows;
+
+        let mut rows = [PinDriver::output(row0)?, PinDriver::output(row1)?];
+
+        for row in &mut rows {
+            row.set_high()?;
+        }
+
+        let [col0, col1, col2, col3] = keyboard.cols;
+
+        let cols = [
+            PinDriver::input(col0, Pull::Up)?,
+            PinDriver::input(col1, Pull::Up)?,
+            PinDriver::input(col2, Pull::Up)?,
+            PinDriver::input(col3, Pull::Up)?,
+        ];
+
         let btn_joy_sw = PinDriver::input(joy.sw, Pull::Up)?;
 
         unsafe {
@@ -61,17 +139,45 @@ impl<'a> InputManager<'a> {
         }
 
         Ok(Self {
-            btn_h,
-            btn_j,
-            btn_k,
-            btn_l,
-            btn_confirm,
-            btn_back,
+            rows,
+            cols,
             btn_joy_sw,
             joy_x_pin: joy.x,
             joy_y_pin: joy.y,
             joy_rotation: rotation,
+            key_states: KeyStates::default(),
         })
+    }
+
+    pub fn scan(&mut self) -> Result<(), anyhow::Error> {
+        let mut temp_states = [false; 8];
+
+        for r in 0..2 {
+            self.rows[r].set_low()?;
+
+            unsafe {
+                esp_idf_svc::sys::ets_delay_us(5);
+            }
+
+            for c in 0..4 {
+                if self.cols[c].is_low() {
+                    temp_states[r * 4 + c] = true;
+                }
+            }
+
+            self.rows[r].set_high()?;
+        }
+
+        self.key_states.esc = temp_states[0];
+        self.key_states.btn_1 = temp_states[1];
+        self.key_states.btn_2 = temp_states[2];
+        self.key_states.btn_3 = temp_states[3];
+        self.key_states.btn_4 = temp_states[4];
+        self.key_states.btn_5 = temp_states[5];
+        self.key_states.btn_6 = temp_states[6];
+        self.key_states.btn_7 = temp_states[7];
+
+        Ok(())
     }
 
     pub fn read_joystick(&self) -> JoystickData {
@@ -102,44 +208,7 @@ impl<'a> InputManager<'a> {
         }
     }
 
-    pub fn get_ui_events(&self, joy_data: JoystickData) -> UiEvents {
-        let mut events = UiEvents::empty();
-
-        if self.btn_confirm.is_low() {
-            events.insert(UiEvents::PRIMARY_CONFIRM);
-        }
-        if self.btn_back.is_low() {
-            events.insert(UiEvents::BACK);
-        }
-        if self.btn_k.is_low() {
-            events.insert(UiEvents::PRIMARY_UP);
-        }
-        if self.btn_j.is_low() {
-            events.insert(UiEvents::PRIMARY_DOWN);
-        }
-        if self.btn_h.is_low() {
-            events.insert(UiEvents::PRIMARY_LEFT);
-        }
-        if self.btn_l.is_low() {
-            events.insert(UiEvents::PRIMARY_RIGHT);
-        }
-
-        if joy_data.y > 0.5 {
-            events.insert(UiEvents::SECONDARY_UP);
-        } else if joy_data.y < -0.5 {
-            events.insert(UiEvents::SECONDARY_DOWN);
-        }
-
-        if joy_data.x < -0.5 {
-            events.insert(UiEvents::SECONDARY_LEFT);
-        } else if joy_data.x > 0.5 {
-            events.insert(UiEvents::SECONDARY_RIGHT);
-        }
-
-        if joy_data.is_pressed {
-            events.insert(UiEvents::SECONDARY_CONFIRM);
-        }
-
-        events
+    pub fn get_ui_events(&mut self, joy_data: JoystickData) -> UiEvents {
+        self.key_states.get_events() | joy_data.get_events()
     }
 }

@@ -5,12 +5,12 @@ use crate::{
 };
 
 pub fn update(event: UiEvents) -> Option<App> {
-    let trigger_mask = UiEvents::PRIMARY_UP
-        | UiEvents::PRIMARY_DOWN
-        | UiEvents::PRIMARY_LEFT
-        | UiEvents::PRIMARY_RIGHT
-        | UiEvents::PRIMARY_CONFIRM
-        | UiEvents::BACK;
+    let trigger_mask = UiEvents::KEY_ESC
+        | UiEvents::KEY_1
+        | UiEvents::KEY_2
+        | UiEvents::KEY_3
+        | UiEvents::KEY_4
+        | UiEvents::KEY_5;
 
     event
         .intersects(trigger_mask)

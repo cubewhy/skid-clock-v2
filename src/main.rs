@@ -10,7 +10,9 @@ use crate::{
     apps::App,
     display::{Sh1106Unified, Ssd1306Unified, UnifiedDisplay},
     input::{InputManager, JoystickRotation},
-    pin_config::{I2cDisplayPinConfig, JoyPinConfig, KeyboardPinConfig, PinConfig, RtcPinConfig},
+    pin_config::{
+        I2cDisplayPinConfig, JoyPinConfig, KeyboardMatrixConfig, PinConfig, RtcPinConfig,
+    },
     rtc::{ds1302::Ds1302, sync_time},
     ui::UiEvents,
 };
@@ -47,13 +49,14 @@ fn main() -> anyhow::Result<()> {
 
     // NOTE: Change the GPIO config if you connected the hardware in different ports
     let pin_config = PinConfig {
-        keyboard: KeyboardPinConfig {
-            h: pins.gpio4.degrade_input(),
-            j: pins.gpio5.degrade_input(),
-            k: pins.gpio6.degrade_input(),
-            l: pins.gpio13.degrade_input(),
-            confirm: pins.gpio15.degrade_input(),
-            back: pins.gpio16.degrade_input(),
+        keyboard: KeyboardMatrixConfig {
+            rows: [pins.gpio4.degrade_output(), pins.gpio5.degrade_output()],
+            cols: [
+                pins.gpio6.degrade_input(),
+                pins.gpio16.degrade_input(),
+                pins.gpio15.degrade_input(),
+                pins.gpio13.degrade_input(),
+            ],
         },
         i2c_display: I2cDisplayPinConfig {
             sda: pins.gpio9.degrade_input_output(),
@@ -68,7 +71,7 @@ fn main() -> anyhow::Result<()> {
         },
         joy: JoyPinConfig {
             x: pins.gpio3.degrade_input(),
-            y: pins.gpio17.degrade_input(),
+            y: pins.gpio7.degrade_input(),
             sw: pins.gpio18.degrade_input(),
         },
     };
@@ -85,11 +88,11 @@ fn main() -> anyhow::Result<()> {
 
     sync_time(&mut rtc_driver)?;
 
-    let input_manager = Arc::new(InputManager::new(
+    let mut input_manager = InputManager::build(
         pin_config.keyboard,
         pin_config.joy,
         JoystickRotation::Deg270,
-    )?);
+    )?;
 
     let i2c_cfg = I2cConfig::new().baudrate(KiloHertz::from(400).into());
     let i2c_driver = I2cDriver::new(
@@ -135,27 +138,24 @@ fn main() -> anyhow::Result<()> {
     let shared_events = Arc::new(Mutex::new(Vec::<UiEvents>::new()));
     let input_events = Arc::clone(&shared_events);
 
-    // input listener thread
-    let input_manager_1 = input_manager.clone();
-    thread::spawn(move || {
-        let mut last_raw_events = UiEvents::empty();
-        loop {
-            let joy_data = input_manager_1.read_joystick();
-            let current_raw_events = input_manager_1.get_ui_events(joy_data);
-
-            let just_pressed = current_raw_events & !last_raw_events;
-            if !just_pressed.is_empty()
-                && let Ok(mut events) = input_events.lock()
-            {
-                events.push(just_pressed);
-            }
-
-            last_raw_events = current_raw_events;
-            thread::sleep(Duration::from_millis(10));
-        }
-    });
-
     loop {
+        // get events
+        let mut last_raw_events = UiEvents::empty();
+        let joy_data = input_manager.read_joystick();
+        input_manager.scan().unwrap();
+        let current_raw_events = input_manager.get_ui_events(joy_data);
+        log::info!("{:?}", current_raw_events);
+
+        let just_pressed = current_raw_events & !last_raw_events;
+        if !just_pressed.is_empty()
+            && let Ok(mut events) = input_events.lock()
+        {
+            events.push(just_pressed);
+        }
+
+        last_raw_events = current_raw_events;
+
+        // render loop
         let now = Instant::now();
         let elapsed = now.duration_since(last_tick);
 
@@ -194,7 +194,7 @@ fn main() -> anyhow::Result<()> {
                 font: &font,
                 font_large: &font_large,
                 uptime_secs: start_time.elapsed().as_secs(),
-                input: input_manager.clone(),
+                input: &input_manager,
             };
 
             app_ctx.display_0_96.clear(BinaryColor::Off).ok();
@@ -208,11 +208,6 @@ fn main() -> anyhow::Result<()> {
             last_tick = Instant::now();
         }
 
-        let frame_elapsed = Instant::now().duration_since(last_tick);
-        if frame_elapsed < target_frame_time {
-            thread::sleep(target_frame_time - frame_elapsed);
-        } else {
-            thread::yield_now();
-        }
+        thread::sleep(Duration::from_millis(10));
     }
 }

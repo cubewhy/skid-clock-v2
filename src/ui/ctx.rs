@@ -14,18 +14,20 @@ use crate::ui::Rect;
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct UiEvents: u16 {
-        const PRIMARY_UP         = 1 << 0;  // 0x0001
-        const PRIMARY_DOWN       = 1 << 1;  // 0x0002
-        const PRIMARY_LEFT       = 1 << 2;  // 0x0004
-        const PRIMARY_RIGHT      = 1 << 3;  // 0x0008
-        const PRIMARY_CONFIRM    = 1 << 4;  // 0x0010
-        const BACK               = 1 << 5;  // 0x0020
+        const KEY_ESC   = 1 << 0;
+        const KEY_1     = 1 << 1;
+        const KEY_2     = 1 << 2;
+        const KEY_3     = 1 << 3;
+        const KEY_4     = 1 << 4;
+        const KEY_5     = 1 << 5;
+        const KEY_6     = 1 << 6;
+        const KEY_7     = 1 << 7;
 
-        const SECONDARY_UP       = 1 << 6;  // 0x0040
-        const SECONDARY_DOWN     = 1 << 7;  // 0x0080
-        const SECONDARY_LEFT     = 1 << 8;  // 0x0100
-        const SECONDARY_RIGHT    = 1 << 9;  // 0x0200
-        const SECONDARY_CONFIRM  = 1 << 10; // 0x0400
+        const UP        = 1 << 8;
+        const DOWN      = 1 << 9;
+        const LEFT      = 1 << 10;
+        const RIGHT     = 1 << 11;
+        const CONFIRM   = 1 << 12;
     }
 }
 

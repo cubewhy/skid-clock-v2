@@ -1,19 +1,15 @@
 use esp_idf_svc::hal::gpio::{AnyIOPin, AnyInputPin, AnyOutputPin};
 
 pub struct PinConfig {
-    pub keyboard: KeyboardPinConfig,
+    pub keyboard: KeyboardMatrixConfig,
     pub i2c_display: I2cDisplayPinConfig,
     pub rtc: RtcPinConfig,
     pub joy: JoyPinConfig,
 }
 
-pub struct KeyboardPinConfig {
-    pub h: AnyInputPin<'static>,
-    pub j: AnyInputPin<'static>,
-    pub k: AnyInputPin<'static>,
-    pub l: AnyInputPin<'static>,
-    pub confirm: AnyInputPin<'static>,
-    pub back: AnyInputPin<'static>,
+pub struct KeyboardMatrixConfig {
+    pub rows: [AnyOutputPin<'static>; 2],
+    pub cols: [AnyInputPin<'static>; 4],
 }
 
 pub struct I2cDisplayPinConfig {
