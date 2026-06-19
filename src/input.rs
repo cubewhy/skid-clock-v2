@@ -43,9 +43,9 @@ impl JoystickData {
         }
 
         if self.x < -0.5 {
-            events.insert(UiEvents::LEFT);
-        } else if self.x > 0.5 {
             events.insert(UiEvents::RIGHT);
+        } else if self.x > 0.5 {
+            events.insert(UiEvents::LEFT);
         }
 
         if self.is_pressed {
