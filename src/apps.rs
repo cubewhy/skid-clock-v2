@@ -1,7 +1,14 @@
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::{
-        main_menu::MainMenuState, settings::TimeSettingsState, time_tools::menu::TimeToolsMenuState,
+        main_menu::MainMenuState,
+        settings::TimeSettingsState,
+        time_tools::{
+            countdown::{self, CountdownState},
+            menu::TimeToolsMenuState,
+            pomodoro::{self, PomodoroState},
+            stopwatch::{self, StopwatchState},
+        },
     },
 };
 
@@ -14,9 +21,9 @@ pub enum App {
     Clock,
     MainMenu(MainMenuState),
     TimeToolsMenu(TimeToolsMenuState),
-    Stopwatch,
-    Countdown,
-    Pomodoro,
+    Stopwatch(StopwatchState),
+    Countdown(CountdownState),
+    Pomodoro(PomodoroState),
 
     GamesMenu,
     TimeSettings(TimeSettingsState),
@@ -28,9 +35,9 @@ impl App {
             App::MainMenu(state) => main_menu::update(ctx, state),
             App::Clock => clock::update(ctx),
             App::TimeToolsMenu(state) => time_tools::menu::update(ctx, state),
-            App::Stopwatch => todo!(),
-            App::Countdown => todo!(),
-            App::Pomodoro => todo!(),
+            App::Stopwatch(state) => stopwatch::update(ctx, state),
+            App::Countdown(state) => countdown::update(ctx, state),
+            App::Pomodoro(state) => pomodoro::update(ctx, state),
             App::GamesMenu => Some(App::main_menu()),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
@@ -41,9 +48,9 @@ impl App {
             App::MainMenu(state) => main_menu::draw(ctx, state),
             App::Clock => clock::draw(ctx),
             App::TimeToolsMenu(state) => time_tools::menu::draw(ctx, state),
-            App::Stopwatch => todo!(),
-            App::Countdown => todo!(),
-            App::Pomodoro => todo!(),
+            App::Stopwatch(state) => stopwatch::draw(ctx, state),
+            App::Countdown(state) => countdown::draw(ctx, state),
+            App::Pomodoro(state) => pomodoro::draw(ctx, state),
             App::GamesMenu => {}
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
@@ -63,14 +70,14 @@ impl App {
     }
 
     pub fn stopwatch() -> Self {
-        Self::Stopwatch
+        Self::Stopwatch(Default::default())
     }
 
     pub fn countdown() -> Self {
-        Self::Countdown
+        Self::Countdown(Default::default())
     }
 
     pub fn pomodoro() -> Self {
-        Self::Pomodoro
+        Self::Pomodoro(Default::default())
     }
 }
