@@ -11,7 +11,7 @@ use crate::{
 use chrono::{Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use std::time::Instant;
 
-pub struct SettingsState {
+pub struct TimeSettingsState {
     pub year: u16,
     pub month: u8,
     pub day: u8,
@@ -23,7 +23,7 @@ pub struct SettingsState {
     pub is_initialized: bool,
 }
 
-impl SettingsState {
+impl TimeSettingsState {
     /// Combines the interactive state parameters into a unified NaiveDateTime
     pub fn get_datetime(&self) -> chrono::NaiveDateTime {
         let configured_date =
@@ -38,7 +38,7 @@ impl SettingsState {
     }
 }
 
-impl Default for SettingsState {
+impl Default for TimeSettingsState {
     fn default() -> Self {
         Self {
             year: 2026,
@@ -71,14 +71,14 @@ fn days_in_month(year: i32, month: u32) -> u32 {
 }
 
 /// Clamps the active day value safely if year/month mutations invalidate it
-fn clamp_day_for_month(state: &mut SettingsState) {
+fn clamp_day_for_month(state: &mut TimeSettingsState) {
     let max_days = days_in_month(state.year as i32, state.month as u32) as u8;
     if state.day > max_days {
         state.day = max_days;
     }
 }
 
-pub fn update(ctx: &mut UpdateContext, state: &mut SettingsState) -> Option<App> {
+pub fn update(ctx: &mut UpdateContext, state: &mut TimeSettingsState) -> Option<App> {
     if !state.is_initialized {
         let current_system_time = Local::now();
         state.year = current_system_time.year() as u16;
@@ -231,7 +231,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut SettingsState) -> Option<App>
     None
 }
 
-pub fn draw(ctx: &mut AppContext<'_, '_>, state: &SettingsState) {
+pub fn draw(ctx: &mut AppContext<'_, '_>, state: &TimeSettingsState) {
     let display_bounds = ctx.display_1_3.rect();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
 

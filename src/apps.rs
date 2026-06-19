@@ -1,6 +1,8 @@
 use crate::{
     app_context::{AppContext, UpdateContext},
-    apps::{main_menu::MainMenuState, settings::SettingsState},
+    apps::{
+        main_menu::MainMenuState, settings::TimeSettingsState, time_tools::menu::TimeToolsMenuState,
+    },
 };
 
 mod clock;
@@ -10,9 +12,9 @@ mod settings;
 pub enum App {
     Clock,
     MainMenu(MainMenuState),
-    TimeToolsMenu,
+    TimeToolsMenu(TimeToolsMenuState),
     GamesMenu,
-    Settings(SettingsState),
+    TimeSettings(TimeSettingsState),
 }
 
 impl App {
@@ -20,9 +22,9 @@ impl App {
         match self {
             App::MainMenu(state) => main_menu::update(ctx, state),
             App::Clock => clock::update(ctx),
-            App::TimeToolsMenu => Some(App::main_menu()),
+            App::TimeToolsMenu(state) => time_tools::menu::update(ctx, state),
             App::GamesMenu => Some(App::main_menu()),
-            App::Settings(state) => settings::update(ctx, state),
+            App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
 
@@ -30,14 +32,20 @@ impl App {
         match self {
             App::MainMenu(state) => main_menu::draw(ctx, state),
             App::Clock => clock::draw(ctx),
-            App::TimeToolsMenu => {}
+            App::TimeToolsMenu(state) => time_tools::menu::draw(ctx, state),
             App::GamesMenu => {}
-            App::Settings(state) => settings::draw(ctx, state),
+            App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
     }
 
     pub fn main_menu() -> Self {
         Self::MainMenu(MainMenuState::default())
+    pub fn time_tools_menu() -> Self {
+        Self::TimeToolsMenu(Default::default())
+    }
+
+    pub fn time_settings() -> Self {
+        Self::TimeSettings(Default::default())
     }
 }
