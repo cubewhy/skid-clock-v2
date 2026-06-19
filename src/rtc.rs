@@ -29,7 +29,7 @@ pub fn sync_time(rtc: &mut Ds1302) -> anyhow::Result<()> {
         if settimeofday(&tv, std::ptr::null()) == 0 {
             log::debug!("time sync completed: {tv:?}");
         } else {
-            log::error!("failed to sync time to esp-idf");
+            anyhow::bail!("failed to sync time to esp-idf");
         }
     }
 
