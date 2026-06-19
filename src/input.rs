@@ -117,6 +117,7 @@ pub struct InputManager<'a> {
     current_events: UiEvents,
     previous_events: UiEvents,
     menu_events: UiEvents,
+    released_events: UiEvents,
 
     last_scan_time: Instant,
     hold_times_ms: [u32; 13],
@@ -173,6 +174,7 @@ impl<'a> InputManager<'a> {
             current_events: UiEvents::empty(),
             previous_events: UiEvents::empty(),
             menu_events: UiEvents::empty(),
+            released_events: UiEvents::empty(),
             last_scan_time: Instant::now(),
             hold_times_ms: [0; 13],
             next_trigger_ms: [0; 13],
@@ -215,6 +217,7 @@ impl<'a> InputManager<'a> {
         self.last_scan_time = now;
 
         self.menu_events = UiEvents::empty();
+        let mut local_released = UiEvents::empty();
 
         for (i, &event) in ALL_EVENTS.iter().enumerate() {
             if self.current_events.contains(event) {
@@ -224,17 +227,25 @@ impl<'a> InputManager<'a> {
 
                 self.hold_times_ms[i] = self.hold_times_ms[i].saturating_add(delta_ms);
 
-                if self.just_pressed(event) {
+                let raw_just_pressed =
+                    self.current_events.contains(event) && !self.previous_events.contains(event);
+
+                if raw_just_pressed {
                     self.menu_events.insert(event);
                 } else if self.hold_times_ms[i] >= self.next_trigger_ms[i] {
                     self.menu_events.insert(event);
                     self.next_trigger_ms[i] = self.hold_times_ms[i] + Self::REPEAT_RATE_MS;
                 }
             } else {
+                if self.hold_times_ms[i] > 0 {
+                    local_released.insert(event);
+                }
                 self.hold_times_ms[i] = 0;
                 self.next_trigger_ms[i] = 0;
             }
         }
+
+        self.released_events = local_released;
 
         Ok(())
     }
@@ -272,11 +283,11 @@ impl<'a> InputManager<'a> {
     }
 
     pub fn just_pressed(&self, event: UiEvents) -> bool {
-        self.current_events.contains(event) && !self.previous_events.contains(event)
+        self.menu_events.contains(event)
     }
 
     pub fn just_released(&self, event: UiEvents) -> bool {
-        !self.current_events.contains(event) && self.previous_events.contains(event)
+        self.released_events.contains(event)
     }
 
     pub fn get_raw_events(&self) -> UiEvents {

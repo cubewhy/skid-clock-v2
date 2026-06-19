@@ -38,7 +38,7 @@ impl MainMenuItem {
         match self {
             Self::Clock => App::Clock,
             Self::TimeTools => App::time_tools_menu(),
-            Self::ArcadeGames => App::GamesMenu,
+            Self::ArcadeGames => App::games_menu(),
             Self::Settings => App::time_settings(),
         }
     }

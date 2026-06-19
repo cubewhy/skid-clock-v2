@@ -1,6 +1,12 @@
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::{
+        games::{
+            menu::GamesMenuState,
+            pong::{self, PongState},
+            snake::{self, SnakeState},
+            tetris::{self, TetrisState},
+        },
         main_menu::MainMenuState,
         settings::TimeSettingsState,
         time_tools::{
@@ -13,6 +19,7 @@ use crate::{
 };
 
 mod clock;
+mod games;
 mod main_menu;
 mod settings;
 mod time_tools;
@@ -25,7 +32,11 @@ pub enum App {
     Countdown(CountdownState),
     Pomodoro(PomodoroState),
 
-    GamesMenu,
+    GamesMenu(GamesMenuState),
+    Snake(SnakeState),
+    Tetris(TetrisState),
+    Pong(PongState),
+
     TimeSettings(TimeSettingsState),
 }
 
@@ -38,7 +49,10 @@ impl App {
             App::Stopwatch(state) => stopwatch::update(ctx, state),
             App::Countdown(state) => countdown::update(ctx, state),
             App::Pomodoro(state) => pomodoro::update(ctx, state),
-            App::GamesMenu => Some(App::main_menu()),
+            App::GamesMenu(state) => games::menu::update(ctx, state),
+            App::Snake(state) => snake::update(ctx, state),
+            App::Tetris(state) => tetris::update(ctx, state),
+            App::Pong(state) => pong::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -51,7 +65,10 @@ impl App {
             App::Stopwatch(state) => stopwatch::draw(ctx, state),
             App::Countdown(state) => countdown::draw(ctx, state),
             App::Pomodoro(state) => pomodoro::draw(ctx, state),
-            App::GamesMenu => {}
+            App::GamesMenu(state) => games::menu::draw(ctx, state),
+            App::Snake(state) => snake::draw(ctx, state),
+            App::Tetris(state) => tetris::draw(ctx, state),
+            App::Pong(state) => pong::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -79,5 +96,21 @@ impl App {
 
     pub fn pomodoro() -> Self {
         Self::Pomodoro(Default::default())
+    }
+
+    pub fn games_menu() -> Self {
+        Self::GamesMenu(Default::default())
+    }
+
+    fn snake_game() -> App {
+        Self::Snake(Default::default())
+    }
+
+    fn tetris_game() -> App {
+        Self::Tetris(Default::default())
+    }
+
+    fn pong_game() -> App {
+        Self::Pong(Default::default())
     }
 }
