@@ -1,6 +1,6 @@
 use crate::{
     app_context::{AppContext, UpdateContext},
-    apps::{App, settings::SettingsState},
+    apps::App,
     display::UnifiedDisplay,
     ui::{
         Rect, Ui,
@@ -8,6 +8,49 @@ use crate::{
         layout::{FlexDirection, FlexNode},
     },
 };
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum MainMenuItem {
+    Clock,
+    TimeTools,
+    ArcadeGames,
+    Settings,
+}
+
+impl MainMenuItem {
+    const ALL: &[Self] = &[
+        Self::Clock,
+        Self::TimeTools,
+        Self::ArcadeGames,
+        Self::Settings,
+    ];
+
+    const fn title(&self) -> &'static str {
+        match self {
+            Self::Clock => "Realtime Clock",
+            Self::TimeTools => "Time Tools",
+            Self::ArcadeGames => "Arcade Games",
+            Self::Settings => "Settings",
+        }
+    }
+
+    fn to_app(self) -> App {
+        match self {
+            Self::Clock => App::Clock,
+            Self::TimeTools => App::time_tools_menu(),
+            Self::ArcadeGames => App::GamesMenu,
+            Self::Settings => App::time_settings(),
+        }
+    }
+}
+
+const HEADER_HEIGHT: u32 = 15;
+const TOP_DIVIDER_HEIGHT: u32 = 2;
+const BOTTOM_DIVIDER_HEIGHT: u32 = 1;
+const FOOTER_HEIGHT: u32 = 14;
+
+const ITEM_HEIGHT: u32 = 10;
+const VISIBLE_COUNT: usize = 3;
 
 #[derive(Default)]
 pub struct MainMenuState {
@@ -20,16 +63,19 @@ pub fn update(ctx: &UpdateContext, state: &mut MainMenuState) -> Option<App> {
 
     let selected_index = &mut state.selected_index;
     let events = ctx.menu_events;
+
+    let max_index = (MainMenuItem::ALL.len() - 1) as u8;
+
     if events.contains(UiEvents::UP) {
         if *selected_index > 0 {
             *selected_index -= 1;
         } else {
-            *selected_index = 3; // MAX INDEX
+            *selected_index = max_index;
         }
     }
 
     if events.contains(UiEvents::DOWN) {
-        if *selected_index < 3 {
+        if *selected_index < max_index {
             *selected_index += 1;
         } else {
             *selected_index = 0;
@@ -40,24 +86,18 @@ pub fn update(ctx: &UpdateContext, state: &mut MainMenuState) -> Option<App> {
         return Some(App::Clock);
     }
 
-    if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
-        let app = match selected_index {
-            0 => App::Clock,
-            1 => App::TimeToolsMenu,
-            2 => App::GamesMenu,
-            3 => App::Settings(SettingsState::default()),
-            _ => return None,
-        };
-        return Some(app);
+    if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT)
+        && let Some(item) = MainMenuItem::ALL.get(*selected_index as usize)
+    {
+        return Some(item.to_app());
     }
 
     None
 }
 
 pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
-    let resolution = ctx.display_1_3.resolution();
+    let display_bounds = ctx.display_1_3.rect();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
-    let screen_rect = Rect::new(0, 0, resolution.width, resolution.height);
 
     let mut header_rect = Rect::default();
     let mut divider_rect = Rect::default();
@@ -68,12 +108,12 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
     FlexNode::new(FlexDirection::Column)
         .child(
             FlexNode::new(FlexDirection::Row)
-                .with_size(screen_rect.width, 15)
+                .with_size(display_bounds.width, HEADER_HEIGHT)
                 .assign_to(&mut header_rect),
         )
         .child(
             FlexNode::new(FlexDirection::Row)
-                .with_size(screen_rect.width, 2)
+                .with_size(display_bounds.width, TOP_DIVIDER_HEIGHT)
                 .assign_to(&mut divider_rect),
         )
         .child(
@@ -83,30 +123,32 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
         )
         .child(
             FlexNode::new(FlexDirection::Row)
-                .with_size(screen_rect.width, 1)
+                .with_size(display_bounds.width, BOTTOM_DIVIDER_HEIGHT)
                 .assign_to(&mut bottom_divider_rect),
         )
         .child(
             FlexNode::new(FlexDirection::Row)
-                .with_size(screen_rect.width, 14)
+                .with_size(display_bounds.width, FOOTER_HEIGHT)
                 .assign_to(&mut footer_rect),
         )
-        .layout(screen_rect);
+        .layout(display_bounds);
 
     ui.label(header_rect, "SYSTEM MENU").center().draw();
-
     ui.divider(divider_rect);
 
-    let menu_items = ["Realtime Clock", "Time Tools", "Arcade Games", "Settings"];
-    let item_height = 10;
-    let visible_count = 3;
+    let mut menu_titles = [""; MainMenuItem::ALL.len()];
+    let mut i = 0;
+    while i < MainMenuItem::ALL.len() {
+        menu_titles[i] = MainMenuItem::ALL[i].title();
+        i += 1;
+    }
 
     ui.scroll_list(
         list_rect,
-        &menu_items,
+        &menu_titles,
         state.selected_index as usize,
-        visible_count,
-        item_height,
+        VISIBLE_COUNT,
+        ITEM_HEIGHT,
         |ui_ctx, item_rect, item_name, is_selected| {
             if is_selected {
                 ui_ctx.label(item_rect, &format!("> {}", item_name)).draw();
