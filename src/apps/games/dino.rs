@@ -259,7 +259,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &DinoState) {
         ui.draw_filled_rect(Rect::new(px + 6, py, 8, 4), BinaryColor::On);
         ui.draw_filled_rect(Rect::new(px + 10, py + 1, 1, 1), BinaryColor::Off);
 
-        if (now_ms / 70) % 2 == 0 {
+        if (now_ms / 70).is_multiple_of(2) {
             ui.draw_filled_rect(Rect::new(px + 3, py + 5, 1, 1), BinaryColor::Off);
             ui.draw_filled_rect(Rect::new(px + 6, py + 5, 1, 1), BinaryColor::On);
         } else {
