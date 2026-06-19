@@ -12,6 +12,8 @@ use ssd1306::{
     Ssd1306, mode::BufferedGraphicsMode, prelude::I2CInterface, size::DisplaySize128x64,
 };
 
+use crate::ui::Rect;
+
 pub type SharedI2cBus<'a> = RefCellDevice<'a, I2cDriver<'static>>;
 
 pub type Display096<'a> = Ssd1306<
@@ -31,6 +33,12 @@ pub trait UnifiedDisplay:
 
     /// Returns the resolution (width, height) of the display.
     fn resolution(&self) -> Size;
+
+    fn rect(&self) -> Rect {
+        let Size { width, height } = self.resolution();
+
+        Rect::new(0, 0, width, height)
+    }
 }
 
 pub struct Ssd1306Unified<'a, 'b> {

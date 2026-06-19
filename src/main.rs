@@ -165,6 +165,7 @@ fn main() -> anyhow::Result<()> {
                     menu_events: UiEvents::empty(),
                     rtc: &mut rtc_driver,
                     input_manager: &input_manager,
+                    uptime_secs: start_time.elapsed().as_secs(),
                 };
                 if let Some(new_app) = active_app.update(&mut update_ctx) {
                     active_app = new_app;
@@ -175,6 +176,7 @@ fn main() -> anyhow::Result<()> {
                         menu_events: events,
                         rtc: &mut rtc_driver,
                         input_manager: &input_manager,
+                        uptime_secs: start_time.elapsed().as_secs(),
                     };
                     if let Some(new_app) = active_app.update(&mut update_ctx) {
                         active_app = new_app;

@@ -24,4 +24,5 @@ pub struct UpdateContext<'a, 'b> {
     pub menu_events: UiEvents,
     pub rtc: &'a mut Ds1302<'b>,
     pub input_manager: &'a InputManager<'static>,
+    pub uptime_secs: u64,
 }

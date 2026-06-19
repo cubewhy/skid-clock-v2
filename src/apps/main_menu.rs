@@ -1,5 +1,3 @@
-use embedded_graphics::pixelcolor::BinaryColor;
-
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::{App, settings::SettingsState},
