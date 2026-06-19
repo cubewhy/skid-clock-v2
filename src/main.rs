@@ -22,7 +22,7 @@ use esp_idf_svc::hal::{
     gpio::PinDriver,
     i2c::{I2cConfig, I2cDriver},
     peripherals::Peripherals,
-    units::KiloHertz,
+    units::{KiloHertz, MegaHertz},
 };
 use mini_oled::screen::sh1106::Sh1106;
 use ssd1306::{I2CDisplayInterface, Ssd1306, mode::DisplayConfig, size::DisplaySize128x64};
@@ -94,7 +94,7 @@ fn main() -> anyhow::Result<()> {
         JoystickRotation::Deg270,
     )?;
 
-    let i2c_cfg = I2cConfig::new().baudrate(KiloHertz::from(400).into());
+    let i2c_cfg = I2cConfig::new().baudrate(MegaHertz::from(1).into());
     let i2c_driver = I2cDriver::new(
         peripherals.i2c0,
         pin_config.i2c_display.sda,
