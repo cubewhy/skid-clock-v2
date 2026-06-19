@@ -339,7 +339,6 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &SettingsState) {
 
     root.layout(display_bounds);
 
-    // TODO: replace with a crate
     let mut y_bytes = [b'0'; 4];
     let mut temp_y = state.year as u32;
     y_bytes[3] = b'0' + (temp_y % 10) as u8;
@@ -376,26 +375,21 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &SettingsState) {
     ss_bytes[1] += state.seconds % 10;
     let ss_str = core::str::from_utf8(&ss_bytes).unwrap_or("00");
 
-    // Pass 1: Render structural headers
+    // Render structural headers
     ui.label(rect_title, "DATE & TIME SETTINGS").center().draw();
     ui.divider(rect_divider);
 
-    // Pass 2: Render date selector sequence components
+    // Render date selector sequence components
     ui.button(rect_year, y_str, state.selected_field == 0);
     ui.label(rect_d1, "-").center().draw();
     ui.button(rect_month, mo_str, state.selected_field == 1);
     ui.label(rect_d2, "-").center().draw();
     ui.button(rect_day, d_str, state.selected_field == 2);
 
-    // Pass 3: Render time selector sequence components
+    // Render time selector sequence components
     ui.button(rect_hh, hh_str, state.selected_field == 3);
     ui.label(rect_c1, ":").center().draw();
     ui.button(rect_mm, mm_str, state.selected_field == 4);
     ui.label(rect_c2, ":").center().draw();
     ui.button(rect_ss, ss_str, state.selected_field == 5);
-
-    // Pass 4: Render operating system manual footer shortcuts
-    ui.label(rect_footer, "[-]Adj [*]Move [7]Save [Esc]")
-        .center()
-        .draw();
 }
