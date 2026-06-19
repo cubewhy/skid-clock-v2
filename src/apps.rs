@@ -17,13 +17,12 @@ pub enum App {
 
 impl App {
     pub fn update(&mut self, ctx: &mut UpdateContext) -> Option<App> {
-        let events = ctx.events;
         match self {
-            App::MainMenu { selected_index } => main_menu::update(events, selected_index),
-            App::Clock => clock::update(events),
+            App::MainMenu { selected_index } => main_menu::update(ctx, selected_index),
+            App::Clock => clock::update(ctx),
             App::TimeToolsMenu => Some(App::MainMenu { selected_index: 0 }),
             App::GamesMenu => Some(App::MainMenu { selected_index: 0 }),
-            App::Settings(state) => settings::update(events, ctx.rtc, state),
+            App::Settings(state) => settings::update(ctx, state),
         }
     }
 

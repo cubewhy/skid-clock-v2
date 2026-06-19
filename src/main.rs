@@ -131,7 +131,7 @@ fn main() -> anyhow::Result<()> {
     let start_time = Instant::now();
 
     let mut last_tick = Instant::now();
-    let target_frame_time = Duration::from_millis(33); // 20fps
+    let target_frame_time = Duration::from_millis(20); // 50fps
 
     let mut active_app = App::Clock;
 
@@ -162,7 +162,7 @@ fn main() -> anyhow::Result<()> {
 
             if frame_events.is_empty() {
                 let mut update_ctx = UpdateContext {
-                    events: UiEvents::empty(),
+                    menu_events: UiEvents::empty(),
                     rtc: &mut rtc_driver,
                     input_manager: &input_manager,
                 };
@@ -172,7 +172,7 @@ fn main() -> anyhow::Result<()> {
             } else {
                 for events in frame_events {
                     let mut update_ctx = UpdateContext {
-                        events,
+                        menu_events: events,
                         rtc: &mut rtc_driver,
                         input_manager: &input_manager,
                     };

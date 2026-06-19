@@ -1,5 +1,6 @@
 use crate::ui::ctx::UiEvents;
 use esp_idf_svc::hal::gpio::{AnyInputPin, Input, Output, PinDriver, Pull};
+use std::time::Instant;
 
 const ALL_EVENTS: &[UiEvents] = &[
     UiEvents::UP,
@@ -115,10 +116,17 @@ pub struct InputManager<'a> {
 
     current_events: UiEvents,
     previous_events: UiEvents,
-    hold_counters: [u32; 13],
+    menu_events: UiEvents,
+
+    last_scan_time: Instant,
+    hold_times_ms: [u32; 13],
+    next_trigger_ms: [u32; 13],
 }
 
 impl<'a> InputManager<'a> {
+    pub const INITIAL_DELAY_MS: u32 = 600;
+    pub const REPEAT_RATE_MS: u32 = 50;
+
     pub fn build(
         keyboard: crate::pin_config::KeyboardMatrixConfig,
         joy: crate::pin_config::JoyPinConfig,
@@ -164,7 +172,10 @@ impl<'a> InputManager<'a> {
             key_states: KeyStates::default(),
             current_events: UiEvents::empty(),
             previous_events: UiEvents::empty(),
-            hold_counters: [0; 13],
+            menu_events: UiEvents::empty(),
+            last_scan_time: Instant::now(),
+            hold_times_ms: [0; 13],
+            next_trigger_ms: [0; 13],
         })
     }
 
@@ -199,11 +210,29 @@ impl<'a> InputManager<'a> {
         let joy_data = self.read_joystick();
         self.current_events = self.key_states.get_events() | joy_data.get_events();
 
+        let now = Instant::now();
+        let delta_ms = now.duration_since(self.last_scan_time).as_millis() as u32;
+        self.last_scan_time = now;
+
+        self.menu_events = UiEvents::empty();
+
         for (i, &event) in ALL_EVENTS.iter().enumerate() {
             if self.current_events.contains(event) {
-                self.hold_counters[i] += 1;
+                if self.hold_times_ms[i] == 0 {
+                    self.next_trigger_ms[i] = Self::INITIAL_DELAY_MS;
+                }
+
+                self.hold_times_ms[i] = self.hold_times_ms[i].saturating_add(delta_ms);
+
+                if self.just_pressed(event) {
+                    self.menu_events.insert(event);
+                } else if self.hold_times_ms[i] >= self.next_trigger_ms[i] {
+                    self.menu_events.insert(event);
+                    self.next_trigger_ms[i] = self.hold_times_ms[i] + Self::REPEAT_RATE_MS;
+                }
             } else {
-                self.hold_counters[i] = 0;
+                self.hold_times_ms[i] = 0;
+                self.next_trigger_ms[i] = 0;
             }
         }
 
@@ -255,22 +284,6 @@ impl<'a> InputManager<'a> {
     }
 
     pub fn get_menu_events(&self) -> UiEvents {
-        let mut menu_events = UiEvents::empty();
-
-        const INITIAL_DELAY_TICKS: u32 = 60; // 600ms / 10ms
-        const REPEAT_RATE_TICKS: u32 = 5; // 50ms / 10ms
-
-        for (i, &event) in ALL_EVENTS.iter().enumerate() {
-            let count = self.hold_counters[i];
-
-            if count == 1
-                || (count >= INITIAL_DELAY_TICKS
-                    && (count - INITIAL_DELAY_TICKS).is_multiple_of(REPEAT_RATE_TICKS))
-            {
-                menu_events.insert(event);
-            }
-        }
-
-        menu_events
+        self.menu_events
     }
 }

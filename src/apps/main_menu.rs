@@ -1,7 +1,7 @@
 use embedded_graphics::pixelcolor::BinaryColor;
 
 use crate::{
-    app_context::AppContext,
+    app_context::{AppContext, UpdateContext},
     apps::{App, settings::SettingsState},
     display::UnifiedDisplay,
     ui::{
@@ -11,20 +11,29 @@ use crate::{
     },
 };
 
-pub fn update(event: UiEvents, selected_index: &mut i32) -> Option<App> {
-    if event.contains(UiEvents::UP) && *selected_index > 0 {
-        *selected_index -= 1;
+pub fn update(ctx: &UpdateContext, selected_index: &mut i32) -> Option<App> {
+    let events = ctx.menu_events;
+    if events.contains(UiEvents::UP) {
+        if *selected_index > 0 {
+            *selected_index -= 1;
+        } else {
+            *selected_index = 3; // MAX INDEX
+        }
     }
 
-    if event.contains(UiEvents::DOWN) && *selected_index < 3 {
-        *selected_index += 1;
+    if events.contains(UiEvents::DOWN) {
+        if *selected_index < 3 {
+            *selected_index += 1;
+        } else {
+            *selected_index = 0;
+        }
     }
 
-    if event.contains(UiEvents::KEY_ESC | UiEvents::LEFT) {
+    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT) {
         return Some(App::Clock);
     }
 
-    if event.intersects(UiEvents::CONFIRM | UiEvents::KEY_3 | UiEvents::RIGHT) {
+    if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_3 | UiEvents::RIGHT) {
         let app = match selected_index {
             0 => App::Clock,
             1 => App::TimeToolsMenu,

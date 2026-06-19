@@ -1,18 +1,15 @@
+use bitflags::Flags;
+
 use crate::{
-    app_context::AppContext,
+    app_context::{AppContext, UpdateContext},
     apps::App,
     ui::{Rect, Ui, ctx::UiEvents},
 };
 
-pub fn update(event: UiEvents) -> Option<App> {
-    let trigger_mask = UiEvents::KEY_ESC
-        | UiEvents::KEY_1
-        | UiEvents::KEY_2
-        | UiEvents::KEY_3
-        | UiEvents::KEY_4
-        | UiEvents::KEY_5;
+pub fn update(ctx: &UpdateContext) -> Option<App> {
+    let trigger_mask = UiEvents::all_named();
 
-    event
+    ctx.menu_events
         .intersects(trigger_mask)
         .then_some(App::MainMenu { selected_index: 0 })
 }

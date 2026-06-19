@@ -21,7 +21,7 @@ pub struct AppContext<'a, 'b> {
 }
 
 pub struct UpdateContext<'a, 'b> {
-    pub events: UiEvents,
+    pub menu_events: UiEvents,
     pub rtc: &'a mut Ds1302<'b>,
     pub input_manager: &'a InputManager<'static>,
 }

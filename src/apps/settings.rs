@@ -1,8 +1,7 @@
 use crate::{
-    app_context::AppContext,
+    app_context::{AppContext, UpdateContext},
     apps::App,
-    rtc::ds1302::Ds1302,
-    ui::{Ui, UiEvents},
+    ui::Ui,
 };
 
 #[derive(Default)]
@@ -10,7 +9,7 @@ pub struct SettingsState {
     // TODO: hms?
 }
 
-pub fn update(events: UiEvents, rtc: &mut Ds1302, state: &mut SettingsState) -> Option<App> {
+pub fn update(ctx: &UpdateContext, state: &mut SettingsState) -> Option<App> {
     None
 }
 
