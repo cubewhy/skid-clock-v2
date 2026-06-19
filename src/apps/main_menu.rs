@@ -62,8 +62,8 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
     let screen_rect = Rect::new(0, 0, resolution.width, resolution.height);
 
     let mut header_rect = Rect::default();
-    let mut line_rect = Rect::default();
-    let mut bottom_line_rect = Rect::default();
+    let mut divider_rect = Rect::default();
+    let mut bottom_divider_rect = Rect::default();
     let mut list_rect = Rect::default();
     let mut footer_rect = Rect::default();
 
@@ -76,7 +76,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
         .child(
             FlexNode::new(FlexDirection::Row)
                 .with_size(screen_rect.width, 2)
-                .assign_to(&mut line_rect),
+                .assign_to(&mut divider_rect),
         )
         .child(
             FlexNode::new(FlexDirection::Row)
@@ -86,7 +86,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
         .child(
             FlexNode::new(FlexDirection::Row)
                 .with_size(screen_rect.width, 1)
-                .assign_to(&mut bottom_line_rect),
+                .assign_to(&mut bottom_divider_rect),
         )
         .child(
             FlexNode::new(FlexDirection::Row)
@@ -97,9 +97,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
 
     ui.label(header_rect, "SYSTEM MENU").center().draw();
 
-    let start_point = (line_rect.x, line_rect.y);
-    let end_point = (line_rect.x + line_rect.width as i32, line_rect.y);
-    ui.draw_line(start_point, end_point, BinaryColor::On);
+    ui.divider(divider_rect);
 
     let menu_items = ["Realtime Clock", "Time Tools", "Arcade Games", "Settings"];
     let item_height = 10;
@@ -120,14 +118,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
         },
     );
 
-    ui.draw_line(
-        (bottom_line_rect.x, bottom_line_rect.y),
-        (
-            bottom_line_rect.x + bottom_line_rect.width as i32,
-            bottom_line_rect.y,
-        ),
-        BinaryColor::On,
-    );
+    ui.divider(bottom_divider_rect);
 
     ui.label(
         footer_rect,
