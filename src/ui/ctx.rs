@@ -79,4 +79,33 @@ where
 
         let _ = eg_line.draw(self.target);
     }
+
+    pub fn draw_procedural_circle(&mut self, cx: i32, cy: i32, radius: i32) {
+        if radius <= 0 {
+            return;
+        }
+        let mut x = radius;
+        let mut y = 0;
+        let mut err = 0;
+
+        while x >= y {
+            self.draw_filled_rect(Rect::new(cx + x, cy + y, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx + y, cy + x, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx - y, cy + x, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx - x, cy + y, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx - x, cy - y, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx - y, cy - x, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx + y, cy - x, 1, 1), BinaryColor::On);
+            self.draw_filled_rect(Rect::new(cx + x, cy - y, 1, 1), BinaryColor::On);
+
+            y += 1;
+            if err <= 0 {
+                err += 2 * y + 1;
+            }
+            if err > 0 {
+                x -= 1;
+                err -= 2 * x + 1;
+            }
+        }
+    }
 }

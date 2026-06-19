@@ -8,6 +8,7 @@ use crate::{
             snake::{self, SnakeState},
             stack::{self, StackState},
             stick_needle::{self, StickNeedleState},
+            target::{self, TargetState},
             tetris::{self, TetrisState},
         },
         main_menu::MainMenuState,
@@ -42,6 +43,7 @@ pub enum App {
     Dino(DinoState),
     Stack(StackState),
     StickNeedle(StickNeedleState),
+    Target(TargetState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -62,11 +64,12 @@ impl App {
             App::Dino(state) => dino::update(ctx, state),
             App::Stack(state) => stack::update(ctx, state),
             App::StickNeedle(state) => stick_needle::update(ctx, state),
+            App::Target(state) => target::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
 
-    pub fn draw(&self, ctx: &mut AppContext) -> anyhow::Result<()> {
+    pub fn draw(&mut self, ctx: &mut AppContext) -> anyhow::Result<()> {
         match self {
             App::MainMenu(state) => main_menu::draw(ctx, state),
             App::Clock => clock::draw(ctx),
@@ -81,6 +84,7 @@ impl App {
             App::Dino(state) => dino::draw(ctx, state),
             App::Stack(state) => stack::draw(ctx, state),
             App::StickNeedle(state) => stick_needle::draw(ctx, state),
+            App::Target(state) => target::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -136,5 +140,9 @@ impl App {
 
     fn stick_needle_game() -> App {
         Self::StickNeedle(Default::default())
+    }
+
+    fn target_game() -> App {
+        Self::Target(Default::default())
     }
 }
