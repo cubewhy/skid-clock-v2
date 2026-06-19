@@ -21,7 +21,7 @@ bitflags! {
         const KEY_4     = 1 << 4;
         const KEY_5     = 1 << 5;
         const KEY_6     = 1 << 6;
-        const KEY_7     = 1 << 7;
+        const KEY_7     = 1 << 7; // also KEY_CONFIRM
 
         const UP        = 1 << 8;
         const DOWN      = 1 << 9;
