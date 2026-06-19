@@ -94,7 +94,7 @@ impl StackState {
 
 pub fn update(ctx: &mut UpdateContext, state: &mut StackState) -> Option<App> {
     if ctx.menu_events.contains(UiEvents::KEY_ESC) {
-        return Some(App::main_menu());
+        return Some(App::games_menu());
     }
 
     if state.phase == GamePhase::GameOver {
