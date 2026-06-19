@@ -1,6 +1,22 @@
 use crate::ui::ctx::UiEvents;
 use esp_idf_svc::hal::gpio::{AnyInputPin, Input, Output, PinDriver, Pull};
 
+const ALL_EVENTS: &[UiEvents] = &[
+    UiEvents::UP,
+    UiEvents::DOWN,
+    UiEvents::LEFT,
+    UiEvents::RIGHT,
+    UiEvents::CONFIRM,
+    UiEvents::KEY_ESC,
+    UiEvents::KEY_1,
+    UiEvents::KEY_2,
+    UiEvents::KEY_3,
+    UiEvents::KEY_4,
+    UiEvents::KEY_5,
+    UiEvents::KEY_6,
+    UiEvents::KEY_7,
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JoystickRotation {
     Deg0,
@@ -96,6 +112,10 @@ pub struct InputManager<'a> {
     pub joy_rotation: JoystickRotation,
 
     pub key_states: KeyStates,
+
+    current_events: UiEvents,
+    previous_events: UiEvents,
+    hold_counters: [u32; 13],
 }
 
 impl<'a> InputManager<'a> {
@@ -105,15 +125,12 @@ impl<'a> InputManager<'a> {
         rotation: JoystickRotation,
     ) -> Result<Self, anyhow::Error> {
         let [row0, row1] = keyboard.rows;
-
         let mut rows = [PinDriver::output(row0)?, PinDriver::output(row1)?];
-
         for row in &mut rows {
             row.set_high()?;
         }
 
         let [col0, col1, col2, col3] = keyboard.cols;
-
         let cols = [
             PinDriver::input(col0, Pull::Up)?,
             PinDriver::input(col1, Pull::Up)?,
@@ -127,7 +144,6 @@ impl<'a> InputManager<'a> {
             esp_idf_svc::sys::adc1_config_width(
                 esp_idf_svc::sys::adc_bits_width_t_ADC_WIDTH_BIT_12,
             );
-
             esp_idf_svc::sys::adc1_config_channel_atten(
                 esp_idf_svc::sys::adc1_channel_t_ADC1_CHANNEL_2,
                 esp_idf_svc::sys::adc_atten_t_ADC_ATTEN_DB_11,
@@ -146,36 +162,50 @@ impl<'a> InputManager<'a> {
             joy_y_pin: joy.y,
             joy_rotation: rotation,
             key_states: KeyStates::default(),
+            current_events: UiEvents::empty(),
+            previous_events: UiEvents::empty(),
+            hold_counters: [0; 13],
         })
     }
 
     pub fn scan(&mut self) -> Result<(), anyhow::Error> {
-        let mut temp_states = [false; 8];
+        self.previous_events = self.current_events;
+        self.key_states = KeyStates::default();
 
         for r in 0..2 {
             self.rows[r].set_low()?;
-
             unsafe {
                 esp_idf_svc::sys::ets_delay_us(5);
             }
 
             for c in 0..4 {
                 if self.cols[c].is_low() {
-                    temp_states[r * 4 + c] = true;
+                    match (r, c) {
+                        (0, 0) => self.key_states.btn_3 = true,
+                        (0, 1) => self.key_states.btn_1 = true,
+                        (0, 2) => self.key_states.btn_2 = true,
+                        (0, 3) => self.key_states.esc = true,
+                        (1, 0) => self.key_states.btn_7 = true,
+                        (1, 1) => self.key_states.btn_5 = true,
+                        (1, 2) => self.key_states.btn_6 = true,
+                        (1, 3) => self.key_states.btn_4 = true,
+                        _ => {}
+                    }
                 }
             }
-
             self.rows[r].set_high()?;
         }
 
-        self.key_states.esc = temp_states[0];
-        self.key_states.btn_1 = temp_states[1];
-        self.key_states.btn_2 = temp_states[2];
-        self.key_states.btn_3 = temp_states[3];
-        self.key_states.btn_4 = temp_states[4];
-        self.key_states.btn_5 = temp_states[5];
-        self.key_states.btn_6 = temp_states[6];
-        self.key_states.btn_7 = temp_states[7];
+        let joy_data = self.read_joystick();
+        self.current_events = self.key_states.get_events() | joy_data.get_events();
+
+        for (i, &event) in ALL_EVENTS.iter().enumerate() {
+            if self.current_events.contains(event) {
+                self.hold_counters[i] += 1;
+            } else {
+                self.hold_counters[i] = 0;
+            }
+        }
 
         Ok(())
     }
@@ -208,7 +238,39 @@ impl<'a> InputManager<'a> {
         }
     }
 
-    pub fn get_ui_events(&mut self, joy_data: JoystickData) -> UiEvents {
-        self.key_states.get_events() | joy_data.get_events()
+    pub fn is_down(&self, event: UiEvents) -> bool {
+        self.current_events.contains(event)
+    }
+
+    pub fn just_pressed(&self, event: UiEvents) -> bool {
+        self.current_events.contains(event) && !self.previous_events.contains(event)
+    }
+
+    pub fn just_released(&self, event: UiEvents) -> bool {
+        !self.current_events.contains(event) && self.previous_events.contains(event)
+    }
+
+    pub fn get_raw_events(&self) -> UiEvents {
+        self.current_events
+    }
+
+    pub fn get_menu_events(&self) -> UiEvents {
+        let mut menu_events = UiEvents::empty();
+
+        const INITIAL_DELAY_TICKS: u32 = 60; // 600ms / 10ms
+        const REPEAT_RATE_TICKS: u32 = 5; // 50ms / 10ms
+
+        for (i, &event) in ALL_EVENTS.iter().enumerate() {
+            let count = self.hold_counters[i];
+
+            if count == 1
+                || (count >= INITIAL_DELAY_TICKS
+                    && (count - INITIAL_DELAY_TICKS).is_multiple_of(REPEAT_RATE_TICKS))
+            {
+                menu_events.insert(event);
+            }
+        }
+
+        menu_events
     }
 }

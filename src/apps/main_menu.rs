@@ -12,19 +12,19 @@ use crate::{
 };
 
 pub fn update(event: UiEvents, selected_index: &mut i32) -> Option<App> {
-    if event.contains(UiEvents::KEY_ESC) && *selected_index > 0 {
+    if event.contains(UiEvents::UP) && *selected_index > 0 {
         *selected_index -= 1;
     }
 
-    if event.contains(UiEvents::KEY_1) && *selected_index < 3 {
+    if event.contains(UiEvents::DOWN) && *selected_index < 3 {
         *selected_index += 1;
     }
 
-    if event.contains(UiEvents::KEY_5) {
+    if event.contains(UiEvents::KEY_ESC | UiEvents::LEFT) {
         return Some(App::Clock);
     }
 
-    if event.intersects(UiEvents::KEY_4 | UiEvents::KEY_3) {
+    if event.intersects(UiEvents::CONFIRM | UiEvents::KEY_3 | UiEvents::RIGHT) {
         let app = match selected_index {
             0 => App::Clock,
             1 => App::TimeToolsMenu,

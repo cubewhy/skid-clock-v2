@@ -136,26 +136,18 @@ fn main() -> anyhow::Result<()> {
     let mut active_app = App::Clock;
 
     let shared_events = Arc::new(Mutex::new(Vec::<UiEvents>::new()));
-    let input_events = Arc::clone(&shared_events);
 
     loop {
-        // get events
-        let mut last_raw_events = UiEvents::empty();
-        let joy_data = input_manager.read_joystick();
         input_manager.scan().unwrap();
-        let current_raw_events = input_manager.get_ui_events(joy_data);
-        log::info!("{:?}", current_raw_events);
 
-        let just_pressed = current_raw_events & !last_raw_events;
-        if !just_pressed.is_empty()
-            && let Ok(mut events) = input_events.lock()
+        let menu_events = input_manager.get_menu_events();
+
+        if !menu_events.is_empty()
+            && let Ok(mut events) = shared_events.lock()
         {
-            events.push(just_pressed);
+            events.push(menu_events);
         }
 
-        last_raw_events = current_raw_events;
-
-        // render loop
         let now = Instant::now();
         let elapsed = now.duration_since(last_tick);
 
@@ -172,15 +164,17 @@ fn main() -> anyhow::Result<()> {
                 let mut update_ctx = UpdateContext {
                     events: UiEvents::empty(),
                     rtc: &mut rtc_driver,
+                    input_manager: &input_manager,
                 };
                 if let Some(new_app) = active_app.update(&mut update_ctx) {
                     active_app = new_app;
                 }
             } else {
-                for event in frame_events {
+                for events in frame_events {
                     let mut update_ctx = UpdateContext {
-                        events: event,
+                        events,
                         rtc: &mut rtc_driver,
+                        input_manager: &input_manager,
                     };
                     if let Some(new_app) = active_app.update(&mut update_ctx) {
                         active_app = new_app;
