@@ -204,6 +204,6 @@ fn main() -> anyhow::Result<()> {
             last_tick = Instant::now();
         }
 
-        thread::sleep(Duration::from_millis(10));
+        thread::yield_now();
     }
 }
