@@ -1,4 +1,5 @@
 pub mod dino;
+pub mod jump_jump;
 pub mod menu;
 pub mod pong;
 pub mod snake;

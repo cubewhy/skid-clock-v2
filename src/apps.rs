@@ -3,6 +3,7 @@ use crate::{
     apps::{
         games::{
             dino::{self, DinoState},
+            jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
             pong::{self, PongState},
             snake::{self, SnakeState},
@@ -44,6 +45,7 @@ pub enum App {
     Stack(StackState),
     StickNeedle(StickNeedleState),
     Target(TargetState),
+    JumpJump(JumpJumpState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -65,6 +67,7 @@ impl App {
             App::Stack(state) => stack::update(ctx, state),
             App::StickNeedle(state) => stick_needle::update(ctx, state),
             App::Target(state) => target::update(ctx, state),
+            App::JumpJump(state) => jump_jump::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -85,6 +88,7 @@ impl App {
             App::Stack(state) => stack::draw(ctx, state),
             App::StickNeedle(state) => stick_needle::draw(ctx, state),
             App::Target(state) => target::draw(ctx, state),
+            App::JumpJump(state) => jump_jump::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -144,5 +148,9 @@ impl App {
 
     fn target_game() -> App {
         Self::Target(Default::default())
+    }
+
+    fn jump_jump_game() -> App {
+        Self::JumpJump(Default::default())
     }
 }
