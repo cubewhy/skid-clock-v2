@@ -1,7 +1,7 @@
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::App,
-    ui::Ui,
+    ui::{Ui, UiEvents},
 };
 
 #[derive(Default)]
@@ -10,6 +10,9 @@ pub struct SettingsState {
 }
 
 pub fn update(ctx: &UpdateContext, state: &mut SettingsState) -> Option<App> {
+    if ctx.menu_events.contains(UiEvents::KEY_ESC) {
+        return Some(App::main_menu());
+    }
     None
 }
 
