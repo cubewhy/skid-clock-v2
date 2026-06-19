@@ -11,6 +11,7 @@ use crate::{
             stick_needle::{self, StickNeedleState},
             target::{self, TargetState},
             tetris::{self, TetrisState},
+            whac_mole::{self, WhacState},
         },
         main_menu::MainMenuState,
         settings::TimeSettingsState,
@@ -46,6 +47,7 @@ pub enum App {
     StickNeedle(StickNeedleState),
     Target(TargetState),
     JumpJump(JumpJumpState),
+    WhacMole(WhacState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -68,6 +70,7 @@ impl App {
             App::StickNeedle(state) => stick_needle::update(ctx, state),
             App::Target(state) => target::update(ctx, state),
             App::JumpJump(state) => jump_jump::update(ctx, state),
+            App::WhacMole(state) => whac_mole::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -89,6 +92,7 @@ impl App {
             App::StickNeedle(state) => stick_needle::draw(ctx, state),
             App::Target(state) => target::draw(ctx, state),
             App::JumpJump(state) => jump_jump::draw(ctx, state),
+            App::WhacMole(state) => whac_mole::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -152,5 +156,9 @@ impl App {
 
     fn jump_jump_game() -> App {
         Self::JumpJump(Default::default())
+    }
+
+    fn whac_mole_game() -> App {
+        Self::WhacMole(Default::default())
     }
 }

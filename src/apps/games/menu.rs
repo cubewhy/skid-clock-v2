@@ -18,6 +18,8 @@ pub enum GamesMenuItem {
     Stack,
     StickNeedle,
     Target,
+    JumpJump,
+    WhacMole,
 }
 
 impl GamesMenuItem {
@@ -29,6 +31,8 @@ impl GamesMenuItem {
         Self::Stack,
         Self::StickNeedle,
         Self::Target,
+        Self::JumpJump,
+        Self::WhacMole,
     ];
 
     const fn title(&self) -> &'static str {
@@ -40,6 +44,8 @@ impl GamesMenuItem {
             Self::Stack => "Stack Tower",
             Self::StickNeedle => "Stick Needle",
             Self::Target => "Target",
+            Self::JumpJump => "Jump Jump",
+            Self::WhacMole => "Whac A Mole",
         }
     }
 
@@ -52,6 +58,8 @@ impl GamesMenuItem {
             Self::Stack => App::stack_game(),
             Self::StickNeedle => App::stick_needle_game(),
             Self::Target => App::target_game(),
+            Self::JumpJump => App::jump_jump_game(),
+            Self::WhacMole => App::whac_mole_game(),
         }
     }
 }

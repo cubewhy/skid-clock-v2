@@ -7,3 +7,4 @@ pub mod stack;
 pub mod stick_needle;
 pub mod target;
 pub mod tetris;
+pub mod whac_mole;
