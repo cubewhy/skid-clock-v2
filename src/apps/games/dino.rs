@@ -78,7 +78,7 @@ impl DinoState {
 
 pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
     if ctx.menu_events.contains(UiEvents::KEY_ESC) {
-        return Some(App::main_menu());
+        return Some(App::games_menu());
     }
 
     let now = Instant::now();
