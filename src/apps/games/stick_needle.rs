@@ -373,7 +373,7 @@ fn hud_format(buf: &mut [u8], level: u16, remaining: u8) -> &str {
         buf[lv_start..idx].reverse();
     }
 
-    while idx < 18 {
+    while idx < 14 {
         buf[idx] = b' ';
         idx += 1;
     }
