@@ -22,6 +22,7 @@ pub enum GamesMenuItem {
     WhacMole,
     NavalBattle,
     TankTrouble,
+    Game2048,
 }
 
 impl GamesMenuItem {
@@ -37,6 +38,7 @@ impl GamesMenuItem {
         Self::WhacMole,
         Self::NavalBattle,
         Self::TankTrouble,
+        Self::Game2048,
     ];
 
     const fn title(&self) -> &'static str {
@@ -52,6 +54,7 @@ impl GamesMenuItem {
             Self::WhacMole => "Whac A Mole",
             Self::NavalBattle => "Naval Battle",
             Self::TankTrouble => "Tank Trouble",
+            Self::Game2048 => "2048",
         }
     }
 
@@ -68,6 +71,7 @@ impl GamesMenuItem {
             Self::WhacMole => App::whac_mole_game(),
             Self::NavalBattle => App::naval_battle_game(),
             Self::TankTrouble => App::tank_trouble_game(),
+            Self::Game2048 => App::game_2048(),
         }
     }
 }

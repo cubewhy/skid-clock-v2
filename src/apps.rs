@@ -3,6 +3,7 @@ use crate::{
     apps::{
         games::{
             dino::{self, DinoState},
+            game_2048::{self, Game2048State},
             jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
             naval_battle::{self, NavalBattleState},
@@ -52,6 +53,7 @@ pub enum App {
     WhacMole(WhacState),
     NavalBattle(NavalBattleState),
     TankTrouble(TankTroubleState),
+    Game2048(Game2048State),
 
     TimeSettings(TimeSettingsState),
 }
@@ -77,6 +79,7 @@ impl App {
             App::WhacMole(state) => whac_mole::update(ctx, state),
             App::NavalBattle(state) => naval_battle::update(ctx, state),
             App::TankTrouble(state) => tank_trouble::update(ctx, state),
+            App::Game2048(state) => game_2048::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -101,6 +104,7 @@ impl App {
             App::WhacMole(state) => whac_mole::draw(ctx, state),
             App::NavalBattle(state) => naval_battle::draw(ctx, state),
             App::TankTrouble(state) => tank_trouble::draw(ctx, state),
+            App::Game2048(state) => game_2048::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -176,5 +180,9 @@ impl App {
 
     fn tank_trouble_game() -> App {
         Self::TankTrouble(Default::default())
+    }
+
+    fn game_2048() -> App {
+        Self::Game2048(Default::default())
     }
 }

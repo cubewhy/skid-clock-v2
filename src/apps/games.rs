@@ -1,4 +1,5 @@
 pub mod dino;
+pub mod game_2048;
 pub mod jump_jump;
 pub mod menu;
 pub mod naval_battle;
