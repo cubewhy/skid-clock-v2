@@ -94,12 +94,14 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
     let mut dt = now.duration_since(state.last_update).as_secs_f32() * 1000.0;
     state.last_update = now;
 
-    // Hard-cap delta time updates matching C++ threshold clamps
     if dt > 50.0 {
         dt = 50.0;
     }
-    if dt <= 0.0 {
-        dt = 1.0;
+    if dt < 0.0 {
+        dt = 0.0;
+    }
+    if dt == 0.0 {
+        return None;
     }
 
     // Input state decoding logic matching joystick axes
@@ -150,7 +152,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
                 let dy = if state.is_ducking {
                     46
                 } else {
-                    state.dino_y as i32
+                    state.dino_y.round() as i32
                 };
                 let dx = 15;
 
@@ -165,7 +167,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
                     _ => 6,
                 };
 
-                let ox = state.obstacles[i].x as i32;
+                let ox = state.obstacles[i].x.round() as i32;
                 let oy = state.obstacles[i].y;
 
                 // Axis-Aligned Bounding Box overlapping check
@@ -267,7 +269,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &DinoState) {
             ui.draw_filled_rect(Rect::new(px + 6, py + 5, 1, 1), BinaryColor::Off);
         }
     } else {
-        let py = state.dino_y as i32;
+        let py = state.dino_y.round() as i32;
         ui.draw_filled_rect(Rect::new(px + 4, py, 6, 4), BinaryColor::On);
         ui.draw_filled_rect(Rect::new(px + 6, py + 1, 1, 1), BinaryColor::Off);
         ui.draw_filled_rect(Rect::new(px + 4, py + 4, 3, 3), BinaryColor::On);
@@ -291,7 +293,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &DinoState) {
     // Procedural rendering cycle for Obstacles and Flying Pterodactyls
     for i in 0..2 {
         if state.obstacles[i].active {
-            let ox = state.obstacles[i].x as i32;
+            let ox = state.obstacles[i].x.round() as i32;
             let oy = state.obstacles[i].y;
 
             if state.obstacles[i].obstacle_type == 0 {
