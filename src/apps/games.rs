@@ -1,6 +1,7 @@
 pub mod dino;
 pub mod flappy_bird;
 pub mod game_2048;
+pub mod gold_miner;
 pub mod jump_jump;
 pub mod menu;
 pub mod naval_battle;

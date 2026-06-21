@@ -5,6 +5,7 @@ use crate::{
             dino::{self, DinoState},
             flappy_bird::{self, FlappyBirdState},
             game_2048::{self, Game2048State},
+            gold_miner::{self, GoldMinerState},
             jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
             naval_battle::{self, NavalBattleState},
@@ -56,6 +57,7 @@ pub enum App {
     TankTrouble(TankTroubleState),
     Game2048(Game2048State),
     FlappyBird(FlappyBirdState),
+    GoldMiner(GoldMinerState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -83,6 +85,7 @@ impl App {
             App::TankTrouble(state) => tank_trouble::update(ctx, state),
             App::Game2048(state) => game_2048::update(ctx, state),
             App::FlappyBird(state) => flappy_bird::update(ctx, state),
+            App::GoldMiner(state) => gold_miner::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -109,6 +112,7 @@ impl App {
             App::TankTrouble(state) => tank_trouble::draw(ctx, state),
             App::Game2048(state) => game_2048::draw(ctx, state),
             App::FlappyBird(state) => flappy_bird::draw(ctx, state),
+            App::GoldMiner(state) => gold_miner::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -192,5 +196,9 @@ impl App {
 
     fn flappy_bird_game() -> App {
         Self::FlappyBird(Default::default())
+    }
+
+    fn gold_miner_game() -> App {
+        Self::GoldMiner(Default::default())
     }
 }
