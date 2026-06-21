@@ -112,19 +112,18 @@ pub fn update(ctx: &mut UpdateContext, state: &mut StickNeedleState) -> Option<A
     let now = Instant::now();
 
     // Evaluate if user is interacting with structural directions or action keys
-    let joy_pushed = ctx.input_manager.is_down(UiEvents::UP)
-        || ctx.input_manager.is_down(UiEvents::DOWN)
-        || ctx.input_manager.is_down(UiEvents::LEFT)
-        || ctx.input_manager.is_down(UiEvents::RIGHT);
+    let fire_pushed = ctx.input_manager.is_down(
+        UiEvents::UP | UiEvents::DOWN | UiEvents::LEFT | UiEvents::RIGHT | UiEvents::KEY_7,
+    );
 
     let clicked = ctx.input_manager.is_down(UiEvents::KEY_7);
 
     if state.phase == GamePhase::GameOver || state.phase == GamePhase::GameWin {
-        if !joy_pushed {
+        if !fire_pushed {
             state.fire_locked = false;
         }
 
-        if clicked || (joy_pushed && !state.fire_locked) {
+        if clicked || (fire_pushed && !state.fire_locked) {
             if state.phase == GamePhase::GameWin {
                 state.level += 1;
                 state.init_pin_game();
@@ -170,10 +169,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut StickNeedleState) -> Option<A
     // 2. Input Firing Latches
     if state.first_frame {
         state.first_frame = false;
-        state.fire_locked = joy_pushed;
+        state.fire_locked = fire_pushed;
     }
 
-    if joy_pushed {
+    if fire_pushed {
         if !state.fire_locked && !state.needle_flying {
             state.needle_flying = true;
             state.flying_y = 56.0;
@@ -215,7 +214,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut StickNeedleState) -> Option<A
 
             if collision {
                 state.phase = GamePhase::GameOver;
-                state.fire_locked = joy_pushed;
+                state.fire_locked = fire_pushed;
             } else {
                 state.needles.push(PinNeedle {
                     relative_angle: hit_angle,
@@ -223,7 +222,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut StickNeedleState) -> Option<A
                 state.remaining_needles -= 1;
                 if state.remaining_needles == 0 {
                     state.phase = GamePhase::GameWin;
-                    state.fire_locked = joy_pushed;
+                    state.fire_locked = fire_pushed;
                 }
             }
         }
