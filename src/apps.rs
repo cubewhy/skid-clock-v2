@@ -3,6 +3,7 @@ use crate::{
     apps::{
         games::{
             dino::{self, DinoState},
+            flappy_bird::{self, FlappyBirdState},
             game_2048::{self, Game2048State},
             jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
@@ -54,6 +55,7 @@ pub enum App {
     NavalBattle(NavalBattleState),
     TankTrouble(TankTroubleState),
     Game2048(Game2048State),
+    FlappyBird(FlappyBirdState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -80,6 +82,7 @@ impl App {
             App::NavalBattle(state) => naval_battle::update(ctx, state),
             App::TankTrouble(state) => tank_trouble::update(ctx, state),
             App::Game2048(state) => game_2048::update(ctx, state),
+            App::FlappyBird(state) => flappy_bird::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -105,6 +108,7 @@ impl App {
             App::NavalBattle(state) => naval_battle::draw(ctx, state),
             App::TankTrouble(state) => tank_trouble::draw(ctx, state),
             App::Game2048(state) => game_2048::draw(ctx, state),
+            App::FlappyBird(state) => flappy_bird::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -184,5 +188,9 @@ impl App {
 
     fn game_2048() -> App {
         Self::Game2048(Default::default())
+    }
+
+    fn flappy_bird_game() -> App {
+        Self::FlappyBird(Default::default())
     }
 }

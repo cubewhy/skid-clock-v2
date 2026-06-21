@@ -279,7 +279,7 @@ impl<'a> InputManager<'a> {
     }
 
     pub fn is_down(&self, event: UiEvents) -> bool {
-        self.current_events.contains(event)
+        self.current_events.intersects(event)
     }
 
     pub fn just_pressed(&self, event: UiEvents) -> bool {
