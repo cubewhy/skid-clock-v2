@@ -6,6 +6,7 @@ pub mod pong;
 pub mod snake;
 pub mod stack;
 pub mod stick_needle;
+pub mod tank_trouble;
 pub mod target;
 pub mod tetris;
 pub mod whac_mole;

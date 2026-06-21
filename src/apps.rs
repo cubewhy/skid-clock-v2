@@ -10,6 +10,7 @@ use crate::{
             snake::{self, SnakeState},
             stack::{self, StackState},
             stick_needle::{self, StickNeedleState},
+            tank_trouble::{self, TankTroubleState},
             target::{self, TargetState},
             tetris::{self, TetrisState},
             whac_mole::{self, WhacState},
@@ -50,6 +51,7 @@ pub enum App {
     JumpJump(JumpJumpState),
     WhacMole(WhacState),
     NavalBattle(NavalBattleState),
+    TankTrouble(TankTroubleState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -74,6 +76,7 @@ impl App {
             App::JumpJump(state) => jump_jump::update(ctx, state),
             App::WhacMole(state) => whac_mole::update(ctx, state),
             App::NavalBattle(state) => naval_battle::update(ctx, state),
+            App::TankTrouble(state) => tank_trouble::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -97,6 +100,7 @@ impl App {
             App::JumpJump(state) => jump_jump::draw(ctx, state),
             App::WhacMole(state) => whac_mole::draw(ctx, state),
             App::NavalBattle(state) => naval_battle::draw(ctx, state),
+            App::TankTrouble(state) => tank_trouble::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -168,5 +172,9 @@ impl App {
 
     fn naval_battle_game() -> App {
         Self::NavalBattle(Default::default())
+    }
+
+    fn tank_trouble_game() -> App {
+        Self::TankTrouble(Default::default())
     }
 }
