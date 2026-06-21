@@ -279,14 +279,6 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &WhacState) {
 
 fn hud_format(buf: &mut [u8], score: i32, lives: i32) -> &str {
     let mut idx = 0;
-    let lbl_title = b"WHAC-A-MOLE";
-    buf[idx..idx + lbl_title.len()].copy_from_slice(lbl_title);
-    idx += lbl_title.len();
-
-    while idx < 15 {
-        buf[idx] = b' ';
-        idx += 1;
-    }
 
     let lbl_s = b"S:";
     buf[idx..idx + lbl_s.len()].copy_from_slice(lbl_s);
