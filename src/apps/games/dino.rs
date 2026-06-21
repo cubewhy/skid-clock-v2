@@ -94,12 +94,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
     let mut dt = now.duration_since(state.last_update).as_secs_f32() * 1000.0;
     state.last_update = now;
 
-    if dt > 50.0 {
-        dt = 50.0;
-    }
-    if dt < 0.0 {
-        dt = 0.0;
-    }
+    dt = dt.clamp(0.0, 50.0);
     if dt == 0.0 {
         return None;
     }
