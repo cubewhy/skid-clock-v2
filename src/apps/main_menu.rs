@@ -62,7 +62,12 @@ pub fn update(ctx: &UpdateContext, state: &mut MainMenuState) -> Option<App> {
     state.tick += 1;
 
     let selected_index = &mut state.selected_index;
-    let events = ctx.menu_events;
+
+    let mut events = ctx.menu_events;
+
+    if events.intersects(UiEvents::UP | UiEvents::DOWN) {
+        events.remove(UiEvents::LEFT | UiEvents::RIGHT);
+    }
 
     let max_index = (MainMenuItem::ALL.len() - 1) as u8;
 
