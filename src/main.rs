@@ -22,7 +22,7 @@ use esp_idf_svc::hal::{
     gpio::PinDriver,
     i2c::{I2cConfig, I2cDriver},
     peripherals::Peripherals,
-    units::{KiloHertz, MegaHertz},
+    units::MegaHertz,
 };
 use mini_oled::screen::sh1106::Sh1106;
 use ssd1306::{I2CDisplayInterface, Ssd1306, mode::DisplayConfig, size::DisplaySize128x64};
