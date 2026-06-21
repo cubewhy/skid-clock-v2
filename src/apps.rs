@@ -6,6 +6,7 @@ use crate::{
             flappy_bird::{self, FlappyBirdState},
             game_2048::{self, Game2048State},
             gold_miner::{self, GoldMinerState},
+            gomoku::{self, GomokuState},
             jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
             naval_battle::{self, NavalBattleState},
@@ -58,6 +59,7 @@ pub enum App {
     Game2048(Game2048State),
     FlappyBird(FlappyBirdState),
     GoldMiner(GoldMinerState),
+    Gomuku(GomokuState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -86,6 +88,7 @@ impl App {
             App::Game2048(state) => game_2048::update(ctx, state),
             App::FlappyBird(state) => flappy_bird::update(ctx, state),
             App::GoldMiner(state) => gold_miner::update(ctx, state),
+            App::Gomuku(state) => gomoku::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -113,6 +116,7 @@ impl App {
             App::Game2048(state) => game_2048::draw(ctx, state),
             App::FlappyBird(state) => flappy_bird::draw(ctx, state),
             App::GoldMiner(state) => gold_miner::draw(ctx, state),
+            App::Gomuku(state) => gomoku::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -200,5 +204,9 @@ impl App {
 
     fn gold_miner_game() -> App {
         Self::GoldMiner(Default::default())
+    }
+
+    fn gomoku_game() -> App {
+        Self::Gomuku(Default::default())
     }
 }

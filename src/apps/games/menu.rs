@@ -25,6 +25,7 @@ pub enum GamesMenuItem {
     Game2048,
     FlappyBird,
     GoldMiner,
+    Gomuku,
 }
 
 impl GamesMenuItem {
@@ -43,6 +44,7 @@ impl GamesMenuItem {
         Self::Game2048,
         Self::FlappyBird,
         Self::GoldMiner,
+        Self::Gomuku,
     ];
 
     const fn title(&self) -> &'static str {
@@ -61,6 +63,7 @@ impl GamesMenuItem {
             Self::Game2048 => "2048",
             Self::FlappyBird => "Flappy Bird",
             Self::GoldMiner => "Gold Miner",
+            Self::Gomuku => "Gomuku",
         }
     }
 
@@ -80,6 +83,7 @@ impl GamesMenuItem {
             Self::Game2048 => App::game_2048(),
             Self::FlappyBird => App::flappy_bird_game(),
             Self::GoldMiner => App::gold_miner_game(),
+            Self::Gomuku => App::gomoku_game(),
         }
     }
 }
