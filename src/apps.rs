@@ -2,6 +2,7 @@ use crate::{
     app_context::{AppContext, UpdateContext},
     apps::{
         games::{
+            brick::{self, BrickState},
             dino::{self, DinoState},
             flappy_bird::{self, FlappyBirdState},
             game_2048::{self, Game2048State},
@@ -60,6 +61,7 @@ pub enum App {
     FlappyBird(FlappyBirdState),
     GoldMiner(GoldMinerState),
     Gomuku(GomokuState),
+    Brick(BrickState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -89,6 +91,7 @@ impl App {
             App::FlappyBird(state) => flappy_bird::update(ctx, state),
             App::GoldMiner(state) => gold_miner::update(ctx, state),
             App::Gomuku(state) => gomoku::update(ctx, state),
+            App::Brick(state) => brick::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -117,6 +120,7 @@ impl App {
             App::FlappyBird(state) => flappy_bird::draw(ctx, state),
             App::GoldMiner(state) => gold_miner::draw(ctx, state),
             App::Gomuku(state) => gomoku::draw(ctx, state),
+            App::Brick(state) => brick::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -208,5 +212,9 @@ impl App {
 
     fn gomoku_game() -> App {
         Self::Gomuku(Default::default())
+    }
+
+    fn brick_game() -> App {
+        Self::Brick(Default::default())
     }
 }

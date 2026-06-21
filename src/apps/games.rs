@@ -1,3 +1,4 @@
+pub mod brick;
 pub mod dino;
 pub mod flappy_bird;
 pub mod game_2048;
