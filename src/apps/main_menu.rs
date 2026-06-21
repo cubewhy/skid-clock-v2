@@ -39,7 +39,7 @@ impl MainMenuItem {
             Self::Clock => App::Clock,
             Self::TimeTools => App::time_tools_menu(),
             Self::ArcadeGames => App::games_menu(),
-            Self::Settings => App::time_settings(),
+            Self::Settings => App::settings_menu(),
         }
     }
 }

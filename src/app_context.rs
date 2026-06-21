@@ -1,6 +1,7 @@
 use crate::{
     display::{Sh1106Unified, Ssd1306Unified},
     input::InputManager,
+    network_manager::NetworkController,
     rtc::ds1302::Ds1302,
     ui::ctx::UiEvents,
 };
@@ -16,6 +17,7 @@ pub struct AppContext<'a, 'b> {
     pub font_large: &'a u8g2_fonts::FontRenderer,
 
     pub input: &'a InputManager<'static>,
+    pub network: &'a NetworkController,
 
     pub uptime_secs: u64,
 }
@@ -25,4 +27,5 @@ pub struct UpdateContext<'a, 'b> {
     pub rtc: &'a mut Ds1302<'b>,
     pub input_manager: &'a InputManager<'static>,
     pub uptime_secs: u64,
+    pub network: &'a NetworkController,
 }

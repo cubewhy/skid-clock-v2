@@ -68,6 +68,8 @@ pub enum App {
     Pacman(PacmanState),
 
     TimeSettings(TimeSettingsState),
+    SettingsMenu(settings::SettingsMenuState),
+    NetworkSettings(settings::NetworkSettingsState),
 }
 
 impl App {
@@ -98,7 +100,9 @@ impl App {
             App::Brick(state) => brick::update(ctx, state),
             App::Undertale(state) => undertale::update(ctx, state),
             App::Pacman(state) => pacman::update(ctx, state),
-            App::TimeSettings(state) => settings::update(ctx, state),
+            App::TimeSettings(state) => settings::time::update(ctx, state),
+            App::SettingsMenu(state) => settings::menu::update(ctx, state),
+            App::NetworkSettings(state) => settings::network::update(ctx, state),
         }
     }
 
@@ -129,7 +133,9 @@ impl App {
             App::Brick(state) => brick::draw(ctx, state),
             App::Undertale(state) => undertale::draw(ctx, state),
             App::Pacman(state) => pacman::draw(ctx, state),
-            App::TimeSettings(state) => settings::draw(ctx, state),
+            App::TimeSettings(state) => settings::time::draw(ctx, state),
+            App::SettingsMenu(state) => settings::menu::draw(ctx, state),
+            App::NetworkSettings(state) => settings::network::draw(ctx, state),
         }
         Ok(())
     }
@@ -142,8 +148,16 @@ impl App {
         Self::TimeToolsMenu(Default::default())
     }
 
+    pub fn settings_menu() -> Self {
+        Self::SettingsMenu(Default::default())
+    }
+
     pub fn time_settings() -> Self {
         Self::TimeSettings(Default::default())
+    }
+
+    pub fn network_settings() -> Self {
+        Self::NetworkSettings(Default::default())
     }
 
     pub fn stopwatch() -> Self {

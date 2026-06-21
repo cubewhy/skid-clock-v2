@@ -10,6 +10,7 @@ use crate::{
     apps::App,
     display::{Sh1106Unified, Ssd1306Unified, UnifiedDisplay},
     input::{InputManager, JoystickRotation},
+    network_manager::NetworkController,
     pin_config::{
         I2cDisplayPinConfig, JoyPinConfig, KeyboardMatrixConfig, PinConfig, RtcPinConfig,
     },
@@ -18,11 +19,15 @@ use crate::{
 };
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::BinaryColor};
 use embedded_hal_bus::i2c::RefCellDevice;
-use esp_idf_svc::hal::{
-    gpio::PinDriver,
-    i2c::{I2cConfig, I2cDriver},
-    peripherals::Peripherals,
-    units::MegaHertz,
+use esp_idf_svc::{
+    eventloop::EspSystemEventLoop,
+    hal::{
+        gpio::PinDriver,
+        i2c::{I2cConfig, I2cDriver},
+        peripherals::Peripherals,
+        units::MegaHertz,
+    },
+    nvs::EspDefaultNvsPartition,
 };
 use mini_oled::screen::sh1106::Sh1106;
 use ssd1306::{I2CDisplayInterface, Ssd1306, mode::DisplayConfig, size::DisplaySize128x64};
@@ -32,6 +37,7 @@ pub mod app_context;
 pub mod apps;
 pub mod display;
 pub mod input;
+pub mod network_manager;
 pub mod pin_config;
 pub mod rtc;
 pub mod ui;
@@ -45,7 +51,11 @@ fn main() -> anyhow::Result<()> {
     esp_idf_svc::log::EspLogger::initialize_default();
 
     let peripherals = Peripherals::take().unwrap();
+    let sys_loop = EspSystemEventLoop::take()?;
+    let nvs = EspDefaultNvsPartition::take()?;
     let pins = peripherals.pins;
+
+    let network_controller = NetworkController::new(peripherals.modem, sys_loop, nvs)?;
 
     // NOTE: Change the GPIO config if you connected the hardware in different ports
     let pin_config = PinConfig {
@@ -166,6 +176,7 @@ fn main() -> anyhow::Result<()> {
                     rtc: &mut rtc_driver,
                     input_manager: &input_manager,
                     uptime_secs: start_time.elapsed().as_secs(),
+                    network: &network_controller,
                 };
                 if let Some(new_app) = active_app.update(&mut update_ctx) {
                     active_app = new_app;
@@ -177,6 +188,7 @@ fn main() -> anyhow::Result<()> {
                         rtc: &mut rtc_driver,
                         input_manager: &input_manager,
                         uptime_secs: start_time.elapsed().as_secs(),
+                        network: &network_controller,
                     };
                     if let Some(new_app) = active_app.update(&mut update_ctx) {
                         active_app = new_app;
@@ -191,6 +203,7 @@ fn main() -> anyhow::Result<()> {
                 font_large: &font_large,
                 uptime_secs: start_time.elapsed().as_secs(),
                 input: &input_manager,
+                network: &network_controller,
             };
 
             app_ctx.display_0_96.clear(BinaryColor::Off).ok();
