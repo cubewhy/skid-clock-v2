@@ -165,10 +165,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
 
     ui.divider(bottom_divider_rect);
 
-    ui.label(
-        footer_rect,
-        "gh@cubewhy/skid-clock-v2 - LICENSED UNDER GPL-3.0 - Open Source Hardware \\ Nya~",
-    )
-    .scroll(state.tick, 5)
-    .draw();
+    ui.label(footer_rect, "gh@cubewhy/skid-clock-v2 \\ Nya~")
+        .scroll(state.tick, 2)
+        .draw();
 }
