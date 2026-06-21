@@ -18,6 +18,7 @@ use crate::{
             tank_trouble::{self, TankTroubleState},
             target::{self, TargetState},
             tetris::{self, TetrisState},
+            undertale::{self, UndertaleState},
             whac_mole::{self, WhacState},
         },
         main_menu::MainMenuState,
@@ -62,6 +63,7 @@ pub enum App {
     GoldMiner(GoldMinerState),
     Gomuku(GomokuState),
     Brick(BrickState),
+    Undertale(UndertaleState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -92,6 +94,7 @@ impl App {
             App::GoldMiner(state) => gold_miner::update(ctx, state),
             App::Gomuku(state) => gomoku::update(ctx, state),
             App::Brick(state) => brick::update(ctx, state),
+            App::Undertale(state) => undertale::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -121,6 +124,7 @@ impl App {
             App::GoldMiner(state) => gold_miner::draw(ctx, state),
             App::Gomuku(state) => gomoku::draw(ctx, state),
             App::Brick(state) => brick::draw(ctx, state),
+            App::Undertale(state) => undertale::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -216,5 +220,9 @@ impl App {
 
     fn brick_game() -> App {
         Self::Brick(Default::default())
+    }
+
+    fn undertale_game() -> App {
+        Self::Undertale(Default::default())
     }
 }

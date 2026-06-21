@@ -14,4 +14,5 @@ pub mod stick_needle;
 pub mod tank_trouble;
 pub mod target;
 pub mod tetris;
+pub mod undertale;
 pub mod whac_mole;
