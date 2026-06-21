@@ -99,12 +99,11 @@ impl PacmanState {
                 && next_r < (MAP_ROWS - 1) as i32
                 && next_c > 0
                 && next_c < (MAP_COLS - 1) as i32
+                && maze[next_r as usize][next_c as usize] == TILE_WALL
             {
-                if maze[next_r as usize][next_c as usize] == TILE_WALL {
-                    maze[next_r as usize][next_c as usize] = TILE_DOT;
-                    maze[(r + dirs[i][0] / 2) as usize][(c + dirs[i][1] / 2) as usize] = TILE_DOT;
-                    Self::carve_pac_maze(maze, next_r, next_c, rng);
-                }
+                maze[next_r as usize][next_c as usize] = TILE_DOT;
+                maze[(r + dirs[i][0] / 2) as usize][(c + dirs[i][1] / 2) as usize] = TILE_DOT;
+                Self::carve_pac_maze(maze, next_r, next_c, rng);
             }
         }
     }
@@ -197,28 +196,31 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PacmanState) -> Option<App> {
         let next_x = state.pacman.x + state.pacman.dx;
         let next_y = state.pacman.y + state.pacman.dy;
 
-        if next_x >= 0 && next_x < MAP_COLS as i8 && next_y >= 0 && next_y < MAP_ROWS as i8 {
-            if state.maze[next_y as usize][next_x as usize] != TILE_WALL {
-                state.pacman.x = next_x;
-                state.pacman.y = next_y;
+        if next_x >= 0
+            && next_x < MAP_COLS as i8
+            && next_y >= 0
+            && next_y < MAP_ROWS as i8
+            && state.maze[next_y as usize][next_x as usize] != TILE_WALL
+        {
+            state.pacman.x = next_x;
+            state.pacman.y = next_y;
 
-                let current_tile = state.maze[state.pacman.y as usize][state.pacman.x as usize];
-                if current_tile == TILE_DOT {
-                    state.maze[state.pacman.y as usize][state.pacman.x as usize] = TILE_EMPTY;
-                    state.score += 10;
-                    state.total_dots = state.total_dots.saturating_sub(1);
-                } else if current_tile == TILE_BIG_DOT {
-                    state.maze[state.pacman.y as usize][state.pacman.x as usize] = TILE_EMPTY;
-                    state.score += 50;
-                    state.total_dots = state.total_dots.saturating_sub(1);
-                    state.power_mode = true;
-                    state.power_timer = 32; // 32 ticks * 250ms = 8 seconds total duration window
-                }
+            let current_tile = state.maze[state.pacman.y as usize][state.pacman.x as usize];
+            if current_tile == TILE_DOT {
+                state.maze[state.pacman.y as usize][state.pacman.x as usize] = TILE_EMPTY;
+                state.score += 10;
+                state.total_dots = state.total_dots.saturating_sub(1);
+            } else if current_tile == TILE_BIG_DOT {
+                state.maze[state.pacman.y as usize][state.pacman.x as usize] = TILE_EMPTY;
+                state.score += 50;
+                state.total_dots = state.total_dots.saturating_sub(1);
+                state.power_mode = true;
+                state.power_timer = 32; // 32 ticks * 250ms = 8 seconds total duration window
+            }
 
-                if state.total_dots == 0 {
-                    state.is_game_win = true;
-                    return None;
-                }
+            if state.total_dots == 0 {
+                state.is_game_win = true;
+                return None;
             }
         }
 
@@ -234,33 +236,36 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PacmanState) -> Option<App> {
                 // Ghost 0: Blinky AI (Target tracking chase/flee Manhattan metrics optimization)
                 let mut target_dist = if state.power_mode { -1 } else { 999 };
 
-                for d in 0..4 {
-                    let tx = g.x + ghost_dirs[d][0];
-                    let ty = g.y + ghost_dirs[d][1];
+                for ghost_dir in ghost_dirs {
+                    let tx = g.x + ghost_dir[0];
+                    let ty = g.y + ghost_dir[1];
 
-                    if tx >= 0 && tx < MAP_COLS as i8 && ty >= 0 && ty < MAP_ROWS as i8 {
-                        if state.maze[ty as usize][tx as usize] != TILE_WALL {
-                            // Enforce anti-reversing movement conditions
-                            if ghost_dirs[d][0] == -g.dx && ghost_dirs[d][1] == -g.dy {
-                                continue;
+                    if tx >= 0
+                        && tx < MAP_COLS as i8
+                        && ty >= 0
+                        && ty < MAP_ROWS as i8
+                        && state.maze[ty as usize][tx as usize] != TILE_WALL
+                    {
+                        // Enforce anti-reversing movement conditions
+                        if ghost_dir[0] == -g.dx && ghost_dir[1] == -g.dy {
+                            continue;
+                        }
+
+                        let dist = (tx as i32 - state.pacman.x as i32).abs()
+                            + (ty as i32 - state.pacman.y as i32).abs();
+                        if state.power_mode {
+                            // Flee condition path layout optimization selection
+                            if dist > target_dist {
+                                target_dist = dist;
+                                best_dx = ghost_dir[0];
+                                best_dy = ghost_dir[1];
                             }
-
-                            let dist = (tx as i32 - state.pacman.x as i32).abs()
-                                + (ty as i32 - state.pacman.y as i32).abs();
-                            if state.power_mode {
-                                // Flee condition path layout optimization selection
-                                if dist > target_dist {
-                                    target_dist = dist;
-                                    best_dx = ghost_dirs[d][0];
-                                    best_dy = ghost_dirs[d][1];
-                                }
-                            } else {
-                                // Active pursuit interception target vector mapping optimization
-                                if dist < target_dist {
-                                    target_dist = dist;
-                                    best_dx = ghost_dirs[d][0];
-                                    best_dy = ghost_dirs[d][1];
-                                }
+                        } else {
+                            // Active pursuit interception target vector mapping optimization
+                            if dist < target_dist {
+                                target_dist = dist;
+                                best_dx = ghost_dir[0];
+                                best_dy = ghost_dir[1];
                             }
                         }
                     }
@@ -270,18 +275,21 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PacmanState) -> Option<App> {
                 let mut valid_dirs = [[0i8; 2]; 4];
                 let mut valid_count = 0;
 
-                for d in 0..4 {
-                    let tx = g.x + ghost_dirs[d][0];
-                    let ty = g.y + ghost_dirs[d][1];
+                for ghost_dir in ghost_dirs {
+                    let tx = g.x + ghost_dir[0];
+                    let ty = g.y + ghost_dir[1];
 
-                    if tx >= 0 && tx < MAP_COLS as i8 && ty >= 0 && ty < MAP_ROWS as i8 {
-                        if state.maze[ty as usize][tx as usize] != TILE_WALL {
-                            if ghost_dirs[d][0] == -g.dx && ghost_dirs[d][1] == -g.dy {
-                                continue;
-                            }
-                            valid_dirs[valid_count] = [ghost_dirs[d][0], ghost_dirs[d][1]];
-                            valid_count += 1;
+                    if tx >= 0
+                        && tx < MAP_COLS as i8
+                        && ty >= 0
+                        && ty < MAP_ROWS as i8
+                        && state.maze[ty as usize][tx as usize] != TILE_WALL
+                    {
+                        if ghost_dir[0] == -g.dx && ghost_dir[1] == -g.dy {
+                            continue;
                         }
+                        valid_dirs[valid_count] = [ghost_dir[0], ghost_dir[1]];
+                        valid_count += 1;
                     }
                 }
 
@@ -406,7 +414,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &PacmanState) {
     ui.label(Rect::new(2, 0, 56, 11), score_str).draw();
 
     // Toggle conditional blinkers indicators metrics matching active context configurations
-    if state.power_mode && (state.power_timer > 8 || (state_millis_now() / 150) % 2 == 0) {
+    if state.power_mode && (state.power_timer > 8 || (state_millis_now() / 150).is_multiple_of(2)) {
         ui.label(Rect::new(60, 0, 42, 11), "[POWER]").draw();
     }
 
