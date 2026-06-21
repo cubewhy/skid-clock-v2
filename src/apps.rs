@@ -11,6 +11,7 @@ use crate::{
             jump_jump::{self, JumpJumpState},
             menu::GamesMenuState,
             naval_battle::{self, NavalBattleState},
+            pacman::{self, PacmanState},
             pong::{self, PongState},
             snake::{self, SnakeState},
             stack::{self, StackState},
@@ -64,6 +65,7 @@ pub enum App {
     Gomuku(GomokuState),
     Brick(BrickState),
     Undertale(UndertaleState),
+    Pacman(PacmanState),
 
     TimeSettings(TimeSettingsState),
 }
@@ -95,6 +97,7 @@ impl App {
             App::Gomuku(state) => gomoku::update(ctx, state),
             App::Brick(state) => brick::update(ctx, state),
             App::Undertale(state) => undertale::update(ctx, state),
+            App::Pacman(state) => pacman::update(ctx, state),
             App::TimeSettings(state) => settings::update(ctx, state),
         }
     }
@@ -125,6 +128,7 @@ impl App {
             App::Gomuku(state) => gomoku::draw(ctx, state),
             App::Brick(state) => brick::draw(ctx, state),
             App::Undertale(state) => undertale::draw(ctx, state),
+            App::Pacman(state) => pacman::draw(ctx, state),
             App::TimeSettings(state) => settings::draw(ctx, state),
         }
         Ok(())
@@ -224,5 +228,9 @@ impl App {
 
     fn undertale_game() -> App {
         Self::Undertale(Default::default())
+    }
+
+    fn pacman_game() -> App {
+        Self::Pacman(Default::default())
     }
 }

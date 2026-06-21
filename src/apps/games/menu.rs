@@ -28,6 +28,7 @@ pub enum GamesMenuItem {
     Gomuku,
     Brick,
     Undertale,
+    Pacman,
 }
 
 impl GamesMenuItem {
@@ -49,6 +50,7 @@ impl GamesMenuItem {
         Self::Gomuku,
         Self::Brick,
         Self::Undertale,
+        Self::Pacman,
     ];
 
     const fn title(&self) -> &'static str {
@@ -70,6 +72,7 @@ impl GamesMenuItem {
             Self::Gomuku => "Gomuku",
             Self::Brick => "Brick Breaker",
             Self::Undertale => "Undertale",
+            Self::Pacman => "Pacman",
         }
     }
 
@@ -92,6 +95,7 @@ impl GamesMenuItem {
             Self::Gomuku => App::gomoku_game(),
             Self::Brick => App::brick_game(),
             Self::Undertale => App::undertale_game(),
+            Self::Pacman => App::pacman_game(),
         }
     }
 }

@@ -7,6 +7,7 @@ pub mod gomoku;
 pub mod jump_jump;
 pub mod menu;
 pub mod naval_battle;
+pub mod pacman;
 pub mod pong;
 pub mod snake;
 pub mod stack;
