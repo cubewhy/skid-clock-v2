@@ -388,8 +388,8 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         return None;
     }
 
-    // Decoupled back/exit navigation (ESC / LEFT Key)
-    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT) {
+    // Decoupled back/exit navigation
+    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT | UiEvents::KEY_4) {
         match state.net_state {
             NetState::Idle => {
                 return Some(App::settings_menu());
@@ -429,14 +429,14 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                 "Disconnect Wi-Fi",
                 "Manual NTP Sync",
             ];
-            if events.contains(UiEvents::UP) {
+            if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
                 state.menu_index = if state.menu_index == 0 {
                     menu_strings.len() - 1
                 } else {
                     state.menu_index - 1
                 };
             }
-            if events.contains(UiEvents::DOWN) {
+            if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
                 state.menu_index = (state.menu_index + 1) % menu_strings.len();
             }
             if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
@@ -466,14 +466,14 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         }
         NetState::SelectNetwork => {
             let total_items = state.scan_list.len() + 1;
-            if events.contains(UiEvents::UP) {
+            if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
                 state.menu_index = if state.menu_index == 0 {
                     total_items - 1
                 } else {
                     state.menu_index - 1
                 };
             }
-            if events.contains(UiEvents::DOWN) {
+            if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
                 state.menu_index = (state.menu_index + 1) % total_items;
             }
             if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
