@@ -30,23 +30,31 @@ pub struct SettingsMenuState {
 }
 
 pub fn update(ctx: &UpdateContext, state: &mut SettingsMenuState) -> Option<App> {
-    if ctx
-        .menu_events
-        .intersects(UiEvents::KEY_ESC | UiEvents::LEFT)
-    {
+    let events = ctx.menu_events;
+    let selected_index = &mut state.selected_index;
+
+    let max_index = (SettingsItem::ALL.len() - 1) as u8;
+
+    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT | UiEvents::KEY_4) {
         return Some(App::main_menu());
     }
-    if ctx.menu_events.contains(UiEvents::UP) {
-        state.selected_index = if state.selected_index == 0 { 1 } else { 0 };
+    if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
+        if *selected_index > 0 {
+            *selected_index -= 1;
+        } else {
+            *selected_index = max_index;
+        }
     }
-    if ctx.menu_events.contains(UiEvents::DOWN) {
-        state.selected_index = (state.selected_index + 1) % 2;
+
+    if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
+        if *selected_index < max_index {
+            *selected_index += 1;
+        } else {
+            *selected_index = 0;
+        }
     }
-    if ctx
-        .menu_events
-        .intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT)
-    {
-        return match SettingsItem::ALL[state.selected_index as usize] {
+    if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
+        return match SettingsItem::ALL[*selected_index as usize] {
             SettingsItem::TimeSettings => Some(App::time_settings()),
             SettingsItem::NetworkSettings => Some(App::network_settings()),
         };
