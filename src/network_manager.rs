@@ -43,7 +43,6 @@ impl NetworkController {
         })
     }
 
-    /// Helper to check connection status quickly from any app
     pub fn is_connected(&self) -> bool {
         if let Ok(state) = self.state.lock() {
             matches!(
@@ -59,5 +58,21 @@ impl NetworkController {
         if let Ok(mut lock) = self.state.lock() {
             *lock = new_state;
         }
+    }
+
+    /// Dynamically determines and sets the correct fallback state based on hardware status
+    pub fn reset_state(&self) -> NetState {
+        let fallback = if let Ok(wifi_lock) = self.wifi.lock() {
+            if wifi_lock.is_connected().unwrap_or(false) {
+                NetState::Connected
+            } else {
+                NetState::Idle
+            }
+        } else {
+            NetState::Idle
+        };
+
+        self.set_state(fallback.clone());
+        fallback
     }
 }

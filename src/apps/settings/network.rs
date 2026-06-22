@@ -19,6 +19,7 @@ use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration, WifiDevi
 pub struct NetworkSettingsState {
     tick: u32,
     net_state: NetState,
+    last_global_state: Option<NetState>,
     menu_index: usize,
     scan_list: Vec<(String, AuthMethod)>,
     selected_ssid: String,
@@ -36,6 +37,7 @@ impl NetworkSettingsState {
         Self {
             tick: 0,
             net_state: NetState::Idle,
+            last_global_state: None,
             menu_index: 0,
             scan_list: Vec::new(),
             selected_ssid: String::new(),
@@ -82,10 +84,7 @@ fn spawn_wifi_scan(controller: &NetworkController) {
             }
 
             if let Err(e) = wifi_lock.start() {
-                log::warn!(
-                    "Wi-Fi interface start command flagged status (already running?): {:?}",
-                    e
-                );
+                log::warn!("Wi-Fi interface start command flagged status: {:?}", e);
             }
 
             let scanned = wifi_lock.scan().inspect_err(|&e| {
@@ -225,9 +224,8 @@ fn spawn_ntp_sync(controller: &NetworkController) {
             && sntp_lock.is_none()
         {
             let mut config = SntpConf::default();
-
             if !config.servers.is_empty() {
-                config.servers[0] = "ntp.aliyun.com";
+                config.servers[0] = "0.cn.pool.ntp.org";
             }
 
             match esp_idf_svc::sntp::EspSntp::new(&config) {
@@ -258,9 +256,10 @@ fn spawn_ntp_sync(controller: &NetworkController) {
                 *lock = NetState::NtpSuccess;
             }
         } else {
-            log::error!(
-                "NTP telemetry update failed to synchronize inside the designated deadline."
-            );
+            log::error!("NTP telemetry update failed to synchronize inside deadline.");
+            if let Ok(mut sntp_lock) = sntp_arc.lock() {
+                *sntp_lock = None;
+            }
             if let Ok(mut lock) = state_arc.lock() {
                 *lock = NetState::Error("NTP Timeout");
             }
@@ -272,7 +271,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
     state.tick += 1;
     let events = ctx.menu_events;
 
-    // Fetch and sync runtime network info asynchronously without blocking the UI thread
+    // Fetch and sync runtime network telemetry asynchronously
     if let Ok(wifi_lock) = ctx.network.wifi.try_lock()
         && let Ok(connected) = wifi_lock.is_connected()
     {
@@ -295,16 +294,36 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         }
     }
 
-    // Sync current UI view state with the global controller status asynchronously
-    if let Ok(global_state) = ctx.network.state.lock()
-        && *global_state != state.net_state
-    {
-        state.net_state = global_state.clone();
-        if state.net_state == NetState::SelectNetwork {
-            if let Ok(results) = ctx.network.scan_results.lock() {
-                state.scan_list = results.clone();
+    // Edge-triggered synchronization with the global controller status
+    if let Ok(global_state) = ctx.network.state.lock() {
+        if state.last_global_state.is_none() {
+            state.last_global_state = Some(global_state.clone());
+        } else if Some(&*global_state) != state.last_global_state.as_ref() {
+            let next_global = global_state.clone();
+            state.last_global_state = Some(next_global.clone());
+
+            match &next_global {
+                NetState::Scanning
+                | NetState::Connecting
+                | NetState::NtpSyncing
+                | NetState::Connected
+                | NetState::NtpSuccess
+                | NetState::Error(_) => {
+                    state.net_state = next_global;
+                }
+                NetState::SelectNetwork => {
+                    state.net_state = next_global;
+                    if let Ok(results) = ctx.network.scan_results.lock() {
+                        state.scan_list = results.clone();
+                    }
+                    state.menu_index = 0;
+                }
+                NetState::Idle => {
+                    state.net_state = NetState::Idle;
+                    state.menu_index = 0;
+                }
+                _ => {}
             }
-            state.menu_index = 0;
         }
     }
 
@@ -317,14 +336,15 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         state.scan_progress = 0.0;
     }
 
+    // Keyboard Text Input State Processing
     if matches!(
         state.net_state,
         NetState::InputSSID | NetState::InputPassword
     ) {
-        // Exit input state back to configuration menu if Escape is pressed
         if events.contains(UiEvents::KEY_ESC) {
+            let fallback_state = ctx.network.reset_state();
             state.net_state = NetState::Idle;
-            ctx.network.set_state(NetState::Idle);
+            state.last_global_state = Some(fallback_state);
             state.menu_index = 0;
             return None;
         }
@@ -345,6 +365,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                 state.selected_ssid = entered_text;
                 state.net_state = NetState::InputPassword;
                 ctx.network.set_state(NetState::InputPassword);
+                state.last_global_state = Some(NetState::InputPassword);
                 state.kb_state = KeyboardState::new(64);
             } else {
                 let pwd = if entered_text.is_empty() {
@@ -363,19 +384,36 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         return None;
     }
 
-    // Handle back/exit navigation
+    // Decoupled back/exit navigation (ESC / LEFT Key)
     if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT) {
-        if state.net_state == NetState::Idle
-            || matches!(state.net_state, NetState::Connected | NetState::Error(_))
-        {
-            if matches!(state.net_state, NetState::Error(_)) {
-                ctx.network.set_state(NetState::Idle);
+        match state.net_state {
+            NetState::Idle => {
+                return Some(App::settings_menu());
             }
-            return Some(App::settings_menu());
-        } else {
-            state.net_state = NetState::Idle;
-            ctx.network.set_state(NetState::Idle);
-            return None;
+            _ => {
+                // UI local view falls back to main list menu
+                state.net_state = NetState::Idle;
+                state.menu_index = 0;
+
+                // Scope to cleanly drop lock before any cross-thread dispatch to prevent deadlocks
+                let is_error_active = if let Ok(global_state) = ctx.network.state.lock() {
+                    matches!(*global_state, NetState::Error(_))
+                } else {
+                    false
+                };
+
+                // Request contextual hardware reset instead of blindly forcing Idle
+                let fallback_state = if is_error_active {
+                    ctx.network.reset_state()
+                } else if let Ok(global_lock) = ctx.network.state.lock() {
+                    global_lock.clone()
+                } else {
+                    NetState::Idle
+                };
+
+                state.last_global_state = Some(fallback_state);
+                return None;
+            }
         }
     }
 
@@ -403,6 +441,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                     1 => {
                         state.net_state = NetState::InputSSID;
                         ctx.network.set_state(NetState::InputSSID);
+                        state.last_global_state = Some(NetState::InputSSID);
                         state.kb_state = KeyboardState::new(32);
                         state.selected_auth = AuthMethod::WPA2Personal;
                     }
@@ -411,11 +450,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                         if ctx.network.is_connected() {
                             spawn_ntp_sync(ctx.network);
                         } else {
-                            log::error!(
-                                "Pre-flight configuration failed: Manual NTP Sync selected while offline."
-                            );
+                            log::error!("Manual NTP Sync selected while offline.");
                             state.net_state = NetState::Error("WiFi Disconnected");
                             ctx.network.set_state(NetState::Error("WiFi Disconnected"));
+                            state.last_global_state = Some(NetState::Error("WiFi Disconnected"));
                         }
                     }
                     _ => {}
@@ -436,8 +474,9 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
             }
             if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
                 if state.menu_index == total_items - 1 {
+                    let fallback_state = ctx.network.reset_state();
                     state.net_state = NetState::Idle;
-                    ctx.network.set_state(NetState::Idle);
+                    state.last_global_state = Some(fallback_state);
                     state.menu_index = 0;
                 } else {
                     let (ssid, auth) = &state.scan_list[state.menu_index];
@@ -448,6 +487,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                     } else {
                         state.net_state = NetState::InputPassword;
                         ctx.network.set_state(NetState::InputPassword);
+                        state.last_global_state = Some(NetState::InputPassword);
                         state.kb_state = KeyboardState::new(64);
                     }
                 }
@@ -465,8 +505,9 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
             }
         }
         NetState::Error(_) if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7) => {
+            let fallback_state = ctx.network.reset_state();
             state.net_state = NetState::Idle;
-            ctx.network.set_state(NetState::Idle);
+            state.last_global_state = Some(fallback_state);
             state.menu_index = 0;
 
             state.selected_ssid.clear();
@@ -552,7 +593,6 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
     let display_bounds = ctx.display_1_3.rect();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
 
-    // Hand off layout drawing parameters directly to the matching keyboard signature
     if state.net_state == NetState::InputSSID || state.net_state == NetState::InputPassword {
         let title = if state.net_state == NetState::InputSSID {
             "ENTER SSID"
