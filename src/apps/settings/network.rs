@@ -593,7 +593,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
                 let flag = if *auth == AuthMethod::None {
                     " [Open]"
                 } else {
-                    " [Lock]"
+                    ""
                 };
                 list_items.push(format!("{}{}", ssid, flag));
             }
