@@ -88,7 +88,7 @@ pub fn draw(ctx: &mut AppContext, state: &SettingsMenuState) {
         list_rect,
         &titles,
         state.selected_index as usize,
-        2,
+        4,
         12,
         |ui_ctx, r, text, selected| {
             if selected {
