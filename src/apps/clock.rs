@@ -61,7 +61,6 @@ pub fn draw(ctx: &mut AppContext) {
             1
         };
 
-        // Chained .draw() to execute the rendering for each bar
         if bar_count >= 1 {
             ui.vertical_divider(Rect::new(bounds.width as i32 - 14, 13, 2, 4));
         }
