@@ -6,7 +6,8 @@ use embedded_graphics::{draw_target::DrawTarget, pixelcolor::BinaryColor};
 pub enum KeyboardMode {
     Lower,
     Upper,
-    Symbol,
+    Symbol1,
+    Symbol2,
 }
 
 impl KeyboardMode {
@@ -14,8 +15,9 @@ impl KeyboardMode {
     pub fn next_mode(&mut self) {
         *self = match self {
             KeyboardMode::Lower => KeyboardMode::Upper,
-            KeyboardMode::Upper => KeyboardMode::Symbol,
-            KeyboardMode::Symbol => KeyboardMode::Lower,
+            KeyboardMode::Upper => KeyboardMode::Symbol1,
+            KeyboardMode::Symbol1 => KeyboardMode::Symbol2,
+            KeyboardMode::Symbol2 => KeyboardMode::Lower,
         };
     }
 }
@@ -33,7 +35,8 @@ impl KeyboardLayer for KeyboardMode {
         match self {
             KeyboardMode::Lower => LAYOUT_LOWER.len(),
             KeyboardMode::Upper => LAYOUT_UPPER.len(),
-            KeyboardMode::Symbol => LAYOUT_SYM.len(),
+            KeyboardMode::Symbol1 => LAYOUT_SYM1.len(),
+            KeyboardMode::Symbol2 => LAYOUT_SYM2.len(),
         }
     }
 
@@ -42,7 +45,8 @@ impl KeyboardLayer for KeyboardMode {
         match self {
             KeyboardMode::Lower => LAYOUT_LOWER[row].len(),
             KeyboardMode::Upper => LAYOUT_UPPER[row].len(),
-            KeyboardMode::Symbol => LAYOUT_SYM[row].len(),
+            KeyboardMode::Symbol1 => LAYOUT_SYM1[row].len(),
+            KeyboardMode::Symbol2 => LAYOUT_SYM2[row].len(),
         }
     }
 
@@ -51,7 +55,8 @@ impl KeyboardLayer for KeyboardMode {
         match self {
             KeyboardMode::Lower => LAYOUT_LOWER[row][col],
             KeyboardMode::Upper => LAYOUT_UPPER[row][col],
-            KeyboardMode::Symbol => LAYOUT_SYM[row][col],
+            KeyboardMode::Symbol1 => LAYOUT_SYM1[row][col],
+            KeyboardMode::Symbol2 => LAYOUT_SYM2[row][col],
         }
     }
 }
@@ -141,8 +146,12 @@ impl KeyboardState {
                     self.mode = KeyboardMode::Upper;
                     self.clamp_cursors();
                 }
-                "sym" | "SYM" => {
-                    self.mode = KeyboardMode::Symbol;
+                "sym1" => {
+                    self.mode = KeyboardMode::Symbol1;
+                    self.clamp_cursors();
+                }
+                "sym2" => {
+                    self.mode = KeyboardMode::Symbol2;
                     self.clamp_cursors();
                 }
                 "<-" => {
@@ -167,27 +176,33 @@ impl KeyboardState {
 }
 
 // Optimized layout arrangements:
-// Moving numbers/extra symbols off letter layers maximizes functional key sizing on smaller screens.
+// Control bar now standardized at 5 items across all views to dynamically map out balanced cell widths.
 const LAYOUT_LOWER: &[&[&str]] = &[
-    &["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"], // 10 columns
-    &["a", "s", "d", "f", "g", "h", "j", "k", "l"],      // 9 columns
-    &["z", "x", "c", "v", "b", "n", "m"],                // 7 columns
-    &["ABC", "sym", "<-", "OK"], // 4 columns (Gives "sym", "<-", "OK" tons of space!)
+    &["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    &["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    &["z", "x", "c", "v", "b", "n", "m"],
+    &["ABC", "sym1", " ", "<-", "OK"], // Added dedicated space key
 ];
 
 const LAYOUT_UPPER: &[&[&str]] = &[
     &["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
     &["A", "S", "D", "F", "G", "H", "J", "K", "L"],
     &["Z", "X", "C", "V", "B", "N", "M"],
-    &["abc", "SYM", "<-", "OK"],
+    &["abc", "sym1", " ", "<-", "OK"], // Added dedicated space key
 ];
 
-const LAYOUT_SYM: &[&[&str]] = &[
+// Symbols Page 1: Numbers & Standard Characters
+const LAYOUT_SYM1: &[&[&str]] = &[
     &["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
     &["!", "@", "#", "$", "%", "^", "&", "*", "(", ")"],
+    &["abc", "sym2", " ", "<-", "OK"], // Links to symbols page 2 + spacebar
+];
+
+// Symbols Page 2: Mathematical Operators & Structural Marks
+const LAYOUT_SYM2: &[&[&str]] = &[
     &["-", "_", "=", "+", "[", "]", "{", "}", ";", ":"],
     &["'", "\"", ",", ".", "/", "<", ">", "?", "\\", "|"],
-    &["abc", " ", "<-", "OK"], // 4 columns for clean spacing
+    &["abc", "sym1", " ", "<-", "OK"], // Links back to symbols page 1 + spacebar
 ];
 
 impl<'a, D> Ui<'a, D>
