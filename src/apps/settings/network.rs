@@ -321,6 +321,14 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         state.net_state,
         NetState::InputSSID | NetState::InputPassword
     ) {
+        // Exit input state back to configuration menu if Escape is pressed
+        if events.contains(UiEvents::KEY_ESC) {
+            state.net_state = NetState::Idle;
+            ctx.network.set_state(NetState::Idle);
+            state.menu_index = 0;
+            return None;
+        }
+
         if state.last_input_time.elapsed() > std::time::Duration::from_millis(200) {
             let old_len = state.kb_state.text.len();
             state.kb_state.handle_event(events);
@@ -536,8 +544,14 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
     let display_bounds = ctx.display_1_3.rect();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
 
+    // Hand off layout drawing parameters directly to the matching keyboard signature
     if state.net_state == NetState::InputSSID || state.net_state == NetState::InputPassword {
-        ui.keyboard(display_bounds, &state.kb_state);
+        let title = if state.net_state == NetState::InputSSID {
+            "ENTER SSID"
+        } else {
+            "ENTER PASSWORD"
+        };
+        ui.keyboard(display_bounds, &state.kb_state, title);
         return;
     }
 
