@@ -419,7 +419,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
             if events.contains(UiEvents::DOWN) {
                 state.menu_index = (state.menu_index + 1) % total_items;
             }
-            if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7) {
+            if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
                 if state.menu_index == total_items - 1 {
                     state.net_state = NetState::Idle;
                     ctx.network.set_state(NetState::Idle);
