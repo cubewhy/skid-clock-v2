@@ -78,6 +78,9 @@ impl KeyboardState {
         if events.contains(UiEvents::RIGHT) {
             self.cursor_col = (self.cursor_col + 1) % 10;
         }
+        if events.contains(UiEvents::KEY_3) {
+            self.text.pop();
+        }
         if events.contains(UiEvents::KEY_6) {
             self.mode.next_mode();
         }
