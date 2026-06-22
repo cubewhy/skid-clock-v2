@@ -108,41 +108,39 @@ const VISIBLE_COUNT: usize = 4;
 
 #[derive(Default)]
 pub struct GamesMenuState {
-    pub select_index: u8,
+    pub selected_index: u8,
     pub tick: u32,
 }
 
 pub fn update(ctx: &UpdateContext, state: &mut GamesMenuState) -> Option<App> {
     state.tick += 1;
-
-    let select_index = &mut state.select_index;
+    let selected_index = &mut state.selected_index;
     let events = ctx.menu_events;
 
     let max_index = (GamesMenuItem::ALL.len() - 1) as u8;
 
-    if events.contains(UiEvents::UP) {
-        if *select_index > 0 {
-            *select_index -= 1;
+    if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
+        if *selected_index > 0 {
+            *selected_index -= 1;
         } else {
-            *select_index = max_index;
+            *selected_index = max_index;
         }
     }
 
-    if events.contains(UiEvents::DOWN) {
-        if *select_index < max_index {
-            *select_index += 1;
+    if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
+        if *selected_index < max_index {
+            *selected_index += 1;
         } else {
-            *select_index = 0;
+            *selected_index = 0;
         }
     }
 
-    // Pressing ESC or LEFT returns you to the Main Menu
-    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT) {
+    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT | UiEvents::KEY_4) {
         return Some(App::main_menu());
     }
 
     if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT)
-        && let Some(item) = GamesMenuItem::ALL.get(*select_index as usize)
+        && let Some(item) = GamesMenuItem::ALL.get(*selected_index as usize)
     {
         return Some(item.to_app());
     }
@@ -189,7 +187,7 @@ pub fn draw(ctx: &mut AppContext, state: &GamesMenuState) {
     ui.scroll_list(
         list_rect,
         &menu_titles,
-        state.select_index as usize,
+        state.selected_index as usize,
         VISIBLE_COUNT,
         ITEM_HEIGHT,
         |ui_ctx, item_rect, item_name, is_selected| {
