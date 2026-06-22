@@ -1,5 +1,7 @@
+use esp_idf_svc::eventloop::{EspSubscription, EspSystemEventLoop, System};
 use esp_idf_svc::sntp::EspSntp;
-use esp_idf_svc::wifi::{AuthMethod, EspWifi};
+use esp_idf_svc::wifi::{AuthMethod, EspWifi, WifiEvent};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -23,23 +25,42 @@ pub struct NetworkController {
     pub sntp: Arc<Mutex<Option<EspSntp<'static>>>>,
     pub state: Arc<Mutex<NetState>>,
     pub scan_results: Arc<Mutex<Vec<(String, AuthMethod)>>>,
+    _subscription: Rc<EspSubscription<'static, System>>,
 }
 
 impl NetworkController {
     pub fn new(
         modem: esp_idf_svc::hal::modem::Modem<'static>,
-        sys_loop: esp_idf_svc::eventloop::EspSystemEventLoop,
+        sys_loop: EspSystemEventLoop,
         nvs: esp_idf_svc::nvs::EspDefaultNvsPartition,
     ) -> anyhow::Result<Self> {
-        let wifi = EspWifi::new(modem, sys_loop, Some(nvs)).inspect_err(|&e| {
+        let wifi = EspWifi::new(modem, sys_loop.clone(), Some(nvs)).inspect_err(|&e| {
             log::error!("Failed to initialize hardware EspWifi driver: {:?}", e);
+        })?;
+
+        let state = Arc::new(Mutex::new(NetState::Idle));
+        let state_trigger = state.clone();
+
+        // Subscribe to system Wi-Fi events to automatically handle disconnections
+        let subscription = sys_loop.subscribe::<WifiEvent, _>(move |event| match event {
+            WifiEvent::StaDisconnected(_) => {
+                log::warn!("WiFi disconnected event captured from system event loop.");
+                if let Ok(mut lock) = state_trigger.lock() {
+                    *lock = NetState::Idle;
+                }
+            }
+            WifiEvent::StaConnected(_) => {
+                log::info!("WiFi connected event captured.");
+            }
+            _ => {}
         })?;
 
         Ok(Self {
             wifi: Arc::new(Mutex::new(wifi)),
             sntp: Arc::new(Mutex::new(None)),
-            state: Arc::new(Mutex::new(NetState::Idle)),
+            state,
             scan_results: Arc::new(Mutex::new(Vec::new())),
+            _subscription: Rc::new(subscription),
         })
     }
 
