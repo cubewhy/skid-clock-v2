@@ -17,6 +17,7 @@ use esp_idf_svc::sntp::{SntpConf, SyncStatus};
 use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration, WifiDeviceId};
 
 pub struct NetworkSettingsState {
+    tick: u32,
     net_state: NetState,
     menu_index: usize,
     scan_list: Vec<(String, AuthMethod)>,
@@ -33,6 +34,7 @@ pub struct NetworkSettingsState {
 impl NetworkSettingsState {
     pub fn new() -> Self {
         Self {
+            tick: 0,
             net_state: NetState::Idle,
             menu_index: 0,
             scan_list: Vec::new(),
@@ -267,6 +269,7 @@ fn spawn_ntp_sync(controller: &NetworkController) {
 }
 
 pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Option<App> {
+    state.tick += 1;
     let events = ctx.menu_events;
 
     // Fetch and sync runtime network info asynchronously without blocking the UI thread
@@ -524,6 +527,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
         .draw();
     sub_ui
         .label(mac_rect, &format!("MAC:  {}", state.connected_mac))
+        .scroll(state.tick, 2)
         .draw();
 
     // -------------------------------------------------------------------------
