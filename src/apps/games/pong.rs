@@ -128,10 +128,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PongState) -> Option<App> {
                     }
                     GameMode::PvP => {
                         if ctx.input_manager.is_down(UiEvents::KEY_5) {
-                            state.enemy_y = (state.enemy_y - paddle_speed * TIME_STEP).max(0.0);
+                            state.enemy_y = (state.enemy_y + paddle_speed * TIME_STEP).min(max_y);
                         }
                         if ctx.input_manager.is_down(UiEvents::KEY_6) {
-                            state.enemy_y = (state.enemy_y + paddle_speed * TIME_STEP).min(max_y);
+                            state.enemy_y = (state.enemy_y - paddle_speed * TIME_STEP).max(0.0);
                         }
                     }
                 }
