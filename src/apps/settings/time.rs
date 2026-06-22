@@ -332,7 +332,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &TimeSettingsState) {
     let ss_str = format!("{:02}", state.seconds);
 
     ui.label(rect_title, "DATE & TIME SETTINGS").center().draw();
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
 
     ui.button(rect_year, y_str, state.selected_field == 0);
     ui.label(rect_d1, "-").center().draw();

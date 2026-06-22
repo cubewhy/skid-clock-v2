@@ -119,7 +119,7 @@ pub fn draw(ctx: &mut AppContext, state: &TimeToolsMenuState) {
         .layout(display_bounds);
 
     ui.label(header_rect, "TIME TOOLS").center().draw();
-    ui.divider(divider_rect);
+    ui.horizontal_divider(divider_rect);
 
     let mut menu_titles = [""; TimeToolsItem::ALL.len()];
     let mut i = 0;

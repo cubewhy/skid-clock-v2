@@ -422,7 +422,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &PacmanState) {
     let lives_str = msg_format(&mut lives_bytes, "V:", state.lives as u32);
     ui.label(Rect::new(105, 0, 20, 11), lives_str).draw();
 
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
 
     // Map offset positioning vectors variables
     let start_x = rect_board.x + 11;

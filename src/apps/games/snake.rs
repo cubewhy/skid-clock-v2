@@ -235,7 +235,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &SnakeState) {
     let mut score_bytes = [0u8; 16];
     let score_str = msg_format(&mut score_bytes, "SCORE: ", state.score);
     ui.label(rect_score, score_str).center().draw();
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
 
     // Game Board Core Parameters
     let cell_size = 4;

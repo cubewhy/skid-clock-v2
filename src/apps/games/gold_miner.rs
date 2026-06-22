@@ -371,7 +371,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &GoldMinerState) {
     let score_str = msg_format(&mut score_bytes, "$", state.score);
     ui.label(rect_score, score_str).center().draw();
 
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
 
     // Draw Miner Drilling Base Crane Pulley Block Structure
     ui.draw_filled_rect(Rect::new(60, 11, 9, 3), BinaryColor::On);

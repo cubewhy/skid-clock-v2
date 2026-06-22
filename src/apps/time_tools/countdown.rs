@@ -162,7 +162,7 @@ pub fn draw(ctx: &mut AppContext, state: &CountdownState) {
         .layout(display_bounds);
 
     ui.label(header_rect, "COUNTDOWN").center().draw();
-    ui.divider(divider_rect);
+    ui.horizontal_divider(divider_rect);
 
     // Calculate elapsed and remaining durations
     let total_elapsed = match state.start_time {
@@ -201,7 +201,7 @@ pub fn draw(ctx: &mut AppContext, state: &CountdownState) {
     };
 
     ui.label(content_rect, &time_str).center().draw();
-    ui.divider(bottom_divider_rect);
+    ui.horizontal_divider(bottom_divider_rect);
 
     // Footer Hint
     let is_running = state.start_time.is_some();

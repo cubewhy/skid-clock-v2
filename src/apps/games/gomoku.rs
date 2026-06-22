@@ -402,7 +402,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &GomokuState) {
                 .label(Rect::new(0, 0, info_bounds.width, 11), "GOMOKU CONFIG")
                 .center()
                 .draw();
-            ui_info.divider(Rect::new(0, 11, info_bounds.width, 2));
+            ui_info.horizontal_divider(Rect::new(0, 11, info_bounds.width, 2));
 
             let m0 = if state.menu_select == 0 {
                 "> Mode: "
@@ -499,7 +499,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &GomokuState) {
                 .label(Rect::new(0, 0, info_bounds.width, 12), "MATCH INFO")
                 .center()
                 .draw();
-            ui_info.divider(Rect::new(0, 12, info_bounds.width, 2));
+            ui_info.horizontal_divider(Rect::new(0, 12, info_bounds.width, 2));
 
             let mode_lbl = if state.is_pve {
                 "Mode: PvE"

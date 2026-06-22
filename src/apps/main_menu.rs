@@ -139,7 +139,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
         .layout(display_bounds);
 
     ui.label(header_rect, "SYSTEM MENU").center().draw();
-    ui.divider(divider_rect);
+    ui.horizontal_divider(divider_rect);
 
     let mut menu_titles = [""; MainMenuItem::ALL.len()];
     let mut i = 0;
@@ -163,7 +163,7 @@ pub fn draw(ctx: &mut AppContext, state: &MainMenuState) {
         },
     );
 
-    ui.divider(bottom_divider_rect);
+    ui.horizontal_divider(bottom_divider_rect);
 
     ui.label(footer_rect, "gh@cubewhy/skid-clock-v2 \\ Nya~")
         .scroll(state.tick, 2)

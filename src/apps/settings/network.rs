@@ -556,7 +556,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
         .label(sub_header_rect, "NETWORK STATUS")
         .center()
         .draw();
-    sub_ui.divider(sub_divider_rect);
+    sub_ui.horizontal_divider(sub_divider_rect);
 
     let mut ssid_rect = Rect::default();
     let mut ip_rect = Rect::default();
@@ -629,7 +629,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
         .layout(display_bounds);
 
     ui.label(header_rect, "WIFI SETTINGS").center().draw();
-    ui.divider(divider_rect);
+    ui.horizontal_divider(divider_rect);
 
     match &state.net_state {
         NetState::Idle => {

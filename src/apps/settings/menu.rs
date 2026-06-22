@@ -81,7 +81,7 @@ pub fn draw(ctx: &mut AppContext, state: &SettingsMenuState) {
         .layout(display_bounds);
 
     ui.label(header_rect, "SETTINGS").center().draw();
-    ui.divider(divider_rect);
+    ui.horizontal_divider(divider_rect);
 
     let titles = [SettingsItem::ALL[0].title(), SettingsItem::ALL[1].title()];
     ui.scroll_list(

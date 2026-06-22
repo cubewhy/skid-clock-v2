@@ -338,7 +338,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &Game2048State) {
     sidebar_layout.layout(rect_sidebar);
 
     ui.label(rect_title, "2048").center().draw();
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
     ui.label(rect_score_lbl, "SCORE").center().draw();
 
     let mut score_bytes = [0u8; 16];

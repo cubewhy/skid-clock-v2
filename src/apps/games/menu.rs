@@ -177,7 +177,7 @@ pub fn draw(ctx: &mut AppContext, state: &GamesMenuState) {
         .layout(display_bounds);
 
     ui.label(header_rect, "ARCADE GAMES").center().draw();
-    ui.divider(divider_rect);
+    ui.horizontal_divider(divider_rect);
 
     let mut menu_titles = [""; GamesMenuItem::ALL.len()];
     let mut i = 0;

@@ -728,7 +728,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &TankTroubleState) {
     let mut score_bytes = [0u8; 16];
     let score_str = msg_format(&mut score_bytes, "TANK WIN: ", state.score);
     ui.label(rect_score, score_str).center().draw();
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
 
     for wall in &state.walls {
         ui.draw_stroke_rect(

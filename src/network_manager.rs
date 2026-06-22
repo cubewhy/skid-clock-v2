@@ -54,6 +54,27 @@ impl NetworkController {
         }
     }
 
+    /// Fetches the current RSSI (Signal Strength in dBm) from the active station interface.
+    /// Returns None if disconnected or if the low-level driver query fails.
+    pub fn get_rssi(&self) -> Option<i32> {
+        if !self.is_connected() {
+            return None;
+        }
+
+        // Lock to ensure thread-safe hardware telemetry acquisition
+        let _wifi_lock = self.wifi.lock().ok()?;
+
+        let mut ap_info = std::mem::MaybeUninit::<esp_idf_svc::sys::wifi_ap_record_t>::uninit();
+        unsafe {
+            if esp_idf_svc::sys::esp_wifi_sta_get_ap_info(ap_info.as_mut_ptr()) == 0 {
+                let ap_info = ap_info.assume_init();
+                Some(ap_info.rssi as i32)
+            } else {
+                None
+            }
+        }
+    }
+
     pub fn set_state(&self, new_state: NetState) {
         if let Ok(mut lock) = self.state.lock() {
             *lock = new_state;

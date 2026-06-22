@@ -289,7 +289,7 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &BrickState) {
     let score_str = msg_format(&mut score_bytes, "SCORE:", state.score);
     ui.label(rect_score, score_str).center().draw();
 
-    ui.divider(rect_divider);
+    ui.horizontal_divider(rect_divider);
 
     // Populate active structural block bricks grid layouts elements
     for r in 0..BRICK_ROWS {
