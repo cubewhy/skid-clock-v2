@@ -363,10 +363,14 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         return None;
     }
 
+    // Handle back/exit navigation
     if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT) {
         if state.net_state == NetState::Idle
             || matches!(state.net_state, NetState::Connected | NetState::Error(_))
         {
+            if matches!(state.net_state, NetState::Error(_)) {
+                ctx.network.set_state(NetState::Idle);
+            }
             return Some(App::settings_menu());
         } else {
             state.net_state = NetState::Idle;
@@ -464,6 +468,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
             state.net_state = NetState::Idle;
             ctx.network.set_state(NetState::Idle);
             state.menu_index = 0;
+
+            state.selected_ssid.clear();
+            state.kb_state = KeyboardState::new(32);
+            state.scan_progress = 0.0;
         }
         _ => {}
     }
