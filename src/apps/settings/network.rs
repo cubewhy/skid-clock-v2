@@ -241,17 +241,21 @@ fn spawn_ntp_sync(controller: &NetworkController) {
         }
 
         let mut retry = 0;
-        while SyncStatus::from(unsafe { esp_idf_svc::sys::sntp_get_sync_status() })
-            != SyncStatus::Completed
-            && retry < 30
-        {
+        let mut sync_success = false;
+
+        while retry < 30 {
+            if SyncStatus::from(unsafe { esp_idf_svc::sys::sntp_get_sync_status() })
+                == SyncStatus::Completed
+            {
+                sync_success = true;
+                break;
+            }
             std::thread::sleep(std::time::Duration::from_millis(500));
             retry += 1;
         }
 
-        if SyncStatus::from(unsafe { esp_idf_svc::sys::sntp_get_sync_status() })
-            == SyncStatus::Completed
-        {
+        if sync_success {
+            log::info!("NTP Synchronization Success!");
             if let Ok(mut lock) = state_arc.lock() {
                 *lock = NetState::NtpSuccess;
             }
