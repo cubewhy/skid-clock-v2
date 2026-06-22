@@ -13,7 +13,7 @@ use crate::{
 };
 use std::vec::Vec;
 
-use esp_idf_svc::sntp::{EspSntp, SyncStatus};
+use esp_idf_svc::sntp::{SntpConf, SyncStatus};
 use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration, WifiDeviceId};
 
 pub struct NetworkSettingsState {
@@ -222,7 +222,13 @@ fn spawn_ntp_sync(controller: &NetworkController) {
         if let Ok(mut sntp_lock) = sntp_arc.lock()
             && sntp_lock.is_none()
         {
-            match EspSntp::new_default() {
+            let mut config = SntpConf::default();
+
+            if !config.servers.is_empty() {
+                config.servers[0] = "ntp.aliyun.com";
+            }
+
+            match esp_idf_svc::sntp::EspSntp::new(&config) {
                 Ok(sntp_instance) => *sntp_lock = Some(sntp_instance),
                 Err(e) => {
                     log::error!("CRITICAL: SNTP engine constructor failed: {:?}", e);
@@ -597,7 +603,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
                 body_rect,
                 &refs,
                 state.menu_index,
-                3,
+                4,
                 12,
                 |ui_ctx, r, text, sel| {
                     if sel {
