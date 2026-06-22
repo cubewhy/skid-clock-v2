@@ -57,7 +57,7 @@ pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App
 
     let max_index = (TimeToolsItem::ALL.len() - 1) as u8;
 
-    if events.contains(UiEvents::UP) {
+    if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
         if *selected_index > 0 {
             *selected_index -= 1;
         } else {
@@ -65,7 +65,7 @@ pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App
         }
     }
 
-    if events.contains(UiEvents::DOWN) {
+    if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
         if *selected_index < max_index {
             *selected_index += 1;
         } else {
@@ -73,7 +73,7 @@ pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App
         }
     }
 
-    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT) {
+    if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT | UiEvents::KEY_4) {
         return Some(App::main_menu());
     }
 
