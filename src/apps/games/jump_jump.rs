@@ -269,17 +269,20 @@ pub fn draw(ctx: &mut AppContext<'_, '_>, state: &JumpJumpState) {
             BinaryColor::On,
         );
 
-        // Projectile trajectory projection dots
-        let proj_target_x = state.player_x + state.charge_power * 1.3;
-        let mut t = 0.15;
-        while t < 1.0 {
-            let proj_x = state.player_x + (proj_target_x - state.player_x) * t;
-            let proj_y = 50.0 - (t * core::f32::consts::PI).sin() * 22.0;
-            ui.draw_filled_rect(
-                Rect::new(proj_x as i32, proj_y as i32, 1, 1),
-                BinaryColor::On,
-            );
-            t += 0.15;
+        #[cfg(feature = "jump_jump_cheat")]
+        {
+            // Projectile trajectory projection dots
+            let proj_target_x = state.player_x + state.charge_power * 1.3;
+            let mut t = 0.15;
+            while t < 1.0 {
+                let proj_x = state.player_x + (proj_target_x - state.player_x) * t;
+                let proj_y = 50.0 - (t * core::f32::consts::PI).sin() * 22.0;
+                ui.draw_filled_rect(
+                    Rect::new(proj_x as i32, proj_y as i32, 1, 1),
+                    BinaryColor::On,
+                );
+                t += 0.15;
+            }
         }
     }
 
