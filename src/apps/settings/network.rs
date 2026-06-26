@@ -25,7 +25,6 @@ pub struct NetworkSettingsState {
     selected_ssid: String,
     selected_auth: AuthMethod,
     kb_state: KeyboardState,
-    scan_progress: f32,
     last_input_time: std::time::Instant,
     connected_ssid: String,
     connected_ip: String,
@@ -43,7 +42,6 @@ impl NetworkSettingsState {
             selected_ssid: String::new(),
             selected_auth: AuthMethod::WPA2Personal,
             kb_state: KeyboardState::new(32),
-            scan_progress: 0.0,
             last_input_time: std::time::Instant::now(),
             connected_ssid: String::from("Disconnected"),
             connected_ip: String::from("0.0.0.0"),
@@ -320,15 +318,6 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         }
     }
 
-    if state.net_state == NetState::Scanning {
-        state.scan_progress += 0.02;
-        if state.scan_progress > 0.95 {
-            state.scan_progress = 0.95;
-        }
-    } else {
-        state.scan_progress = 0.0;
-    }
-
     // Keyboard Text Input State Processing
     if matches!(
         state.net_state,
@@ -502,7 +491,6 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
 
             state.selected_ssid.clear();
             state.kb_state = KeyboardState::new(32);
-            state.scan_progress = 0.0;
         }
         _ => {}
     }
@@ -637,7 +625,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
             );
         }
         NetState::Scanning => {
-            ui.progress_bar(body_rect, "Scanning WiFi...", state.scan_progress);
+            ui.indeterminate_progress_bar(body_rect, "Scanning WiFi...", state.tick);
         }
         NetState::SelectNetwork => {
             let mut list_items = Vec::new();
