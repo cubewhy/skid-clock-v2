@@ -14,7 +14,7 @@ use crate::{
 use std::vec::Vec;
 
 use esp_idf_svc::sntp::{SntpConf, SyncStatus};
-use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration, WifiDeviceId};
+use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration};
 
 pub struct NetworkSettingsState {
     tick: u32,
@@ -72,16 +72,6 @@ fn spawn_wifi_scan(controller: &NetworkController) {
             let mut wifi_lock = wifi_arc
                 .lock()
                 .map_err(|_| anyhow::anyhow!("Wifi lock poisoned"))?;
-
-            if let Err(e) =
-                wifi_lock.set_configuration(&Configuration::Client(ClientConfiguration::default()))
-            {
-                log::error!(
-                    "Failed to apply default station configuration layout: {:?}",
-                    e
-                );
-                return Err(e.into());
-            }
 
             if let Err(e) = wifi_lock.start() {
                 log::warn!("Wi-Fi interface start command flagged status: {:?}", e);
@@ -275,27 +265,26 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
     state.tick += 1;
     let events = ctx.menu_events;
 
-    // Fetch and sync runtime network telemetry asynchronously
+    // Synchronize UI string buffers using the controller's clean dynamic getters
+    if ctx.network.is_connected() {
+        if let Some(ssid) = ctx.network.get_connected_ssid() {
+            state.connected_ssid = ssid;
+        }
+        if let Some(ip) = ctx.network.get_ip_address() {
+            state.connected_ip = ip;
+        }
+    } else {
+        state.connected_ssid = String::from("Disconnected");
+        state.connected_ip = String::from("0.0.0.0");
+    }
+
     if let Ok(wifi_lock) = ctx.network.wifi.try_lock()
-        && let Ok(connected) = wifi_lock.is_connected()
+        && let Ok(mac) = wifi_lock.get_mac(esp_idf_svc::wifi::WifiDeviceId::Sta)
     {
-        if connected {
-            if let Ok(Configuration::Client(client_cfg)) = wifi_lock.get_configuration() {
-                state.connected_ssid = client_cfg.ssid.to_string();
-            }
-            if let Ok(ip_info) = wifi_lock.sta_netif().get_ip_info() {
-                state.connected_ip = ip_info.ip.to_string();
-            }
-        } else {
-            state.connected_ssid = String::from("Disconnected");
-            state.connected_ip = String::from("0.0.0.0");
-        }
-        if let Ok(mac) = wifi_lock.get_mac(WifiDeviceId::Sta) {
-            state.connected_mac = format!(
-                "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
-                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
-            );
-        }
+        state.connected_mac = format!(
+            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
+            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+        );
     }
 
     // Edge-triggered synchronization with the global controller status
@@ -395,18 +384,15 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                 return Some(App::settings_menu());
             }
             _ => {
-                // UI local view falls back to main list menu
                 state.net_state = NetState::Idle;
                 state.menu_index = 0;
 
-                // Scope to cleanly drop lock before any cross-thread dispatch to prevent deadlocks
                 let is_error_active = if let Ok(global_state) = ctx.network.state.lock() {
                     matches!(*global_state, NetState::Error(_))
                 } else {
                     false
                 };
 
-                // Request contextual hardware reset instead of blindly forcing Idle
                 let fallback_state = if is_error_active {
                     ctx.network.reset_state()
                 } else if let Ok(global_lock) = ctx.network.state.lock() {
@@ -524,9 +510,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
 }
 
 pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
-    // -------------------------------------------------------------------------
-    // Secondary Display Drawing Engine (ctx.display_0_96)
-    // -------------------------------------------------------------------------
+    // Secondary Display Layout (0.96")
     let sub_bounds = ctx.display_0_96.rect();
     let mut sub_ui = Ui::new(&mut ctx.display_0_96, ctx.font);
 
@@ -591,9 +575,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
         .scroll(state.tick, 2)
         .draw();
 
-    // -------------------------------------------------------------------------
-    // Primary Display Drawing Engine (ctx.display_1_3)
-    // -------------------------------------------------------------------------
+    // Primary Display Layout (1.3")
     let display_bounds = ctx.display_1_3.rect();
     let mut ui = Ui::new(&mut ctx.display_1_3, ctx.font);
 

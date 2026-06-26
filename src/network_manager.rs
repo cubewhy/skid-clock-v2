@@ -1,6 +1,6 @@
 use esp_idf_svc::eventloop::{EspSubscription, EspSystemEventLoop, System};
 use esp_idf_svc::sntp::EspSntp;
-use esp_idf_svc::wifi::{AuthMethod, EspWifi, WifiEvent};
+use esp_idf_svc::wifi::{AuthMethod, Configuration, EspWifi, WifiEvent};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
@@ -45,7 +45,12 @@ impl NetworkController {
         let subscription = sys_loop.subscribe::<WifiEvent, _>(move |event| match event {
             WifiEvent::StaDisconnected(_) => {
                 log::warn!("WiFi disconnected event captured from system event loop.");
-                if let Ok(mut lock) = state_trigger.lock() {
+                if let Ok(mut lock) = state_trigger.lock()
+                    && matches!(
+                        *lock,
+                        NetState::Connected | NetState::NtpSyncing | NetState::NtpSuccess
+                    )
+                {
                     *lock = NetState::Idle;
                 }
             }
@@ -65,14 +70,37 @@ impl NetworkController {
     }
 
     pub fn is_connected(&self) -> bool {
-        if let Ok(state) = self.state.lock() {
-            matches!(
-                *state,
-                NetState::Connected | NetState::NtpSyncing | NetState::NtpSuccess
-            )
+        if let Ok(wifi_lock) = self.wifi.lock() {
+            wifi_lock.is_connected().unwrap_or(false)
         } else {
             false
         }
+    }
+
+    /// Dynamically fetches the active SSID directly from the underlying driver configuration.
+    /// This avoids state desynchronization and acts as a single source of truth.
+    pub fn get_connected_ssid(&self) -> Option<String> {
+        if !self.is_connected() {
+            return None;
+        }
+
+        let wifi_lock = self.wifi.lock().ok()?;
+        if let Ok(Configuration::Client(client_cfg)) = wifi_lock.get_configuration() {
+            Some(client_cfg.ssid.to_string())
+        } else {
+            None
+        }
+    }
+
+    /// Dynamically fetches the current IP address assigned to the station interface.
+    pub fn get_ip_address(&self) -> Option<String> {
+        if !self.is_connected() {
+            return None;
+        }
+
+        let wifi_lock = self.wifi.lock().ok()?;
+        let ip_info = wifi_lock.sta_netif().get_ip_info().ok()?;
+        Some(ip_info.ip.to_string())
     }
 
     /// Fetches the current RSSI (Signal Strength in dBm) from the active station interface.
