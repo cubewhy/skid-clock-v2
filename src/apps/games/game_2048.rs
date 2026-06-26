@@ -103,7 +103,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut Game2048State) -> Option<App>
 
     // Control directional inputs with a 200ms debounce cooldown
     if state.last_action.elapsed().as_millis() > 200 {
-        if ctx.input_manager.is_down(UiEvents::LEFT) {
+        if ctx.input_manager.is_down(UiEvents::LEFT | UiEvents::KEY_4) {
             for i in 0..4 {
                 let mut target = 0;
                 for j in 0..4 {
@@ -136,7 +136,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut Game2048State) -> Option<App>
                 }
             }
             state.last_action = Instant::now();
-        } else if ctx.input_manager.is_down(UiEvents::RIGHT) {
+        } else if ctx.input_manager.is_down(UiEvents::RIGHT | UiEvents::KEY_7) {
             for i in 0..4 {
                 let mut target = 3;
                 for j in (0..4).rev() {
@@ -169,7 +169,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut Game2048State) -> Option<App>
                 }
             }
             state.last_action = Instant::now();
-        } else if ctx.input_manager.is_down(UiEvents::UP) {
+        } else if ctx.input_manager.is_down(UiEvents::UP | UiEvents::KEY_6) {
             for j in 0..4 {
                 let mut target = 0;
                 for i in 0..4 {
@@ -202,7 +202,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut Game2048State) -> Option<App>
                 }
             }
             state.last_action = Instant::now();
-        } else if ctx.input_manager.is_down(UiEvents::DOWN) {
+        } else if ctx.input_manager.is_down(UiEvents::DOWN | UiEvents::KEY_5) {
             for j in 0..4 {
                 let mut target = 3;
                 for i in (0..4).rev() {
