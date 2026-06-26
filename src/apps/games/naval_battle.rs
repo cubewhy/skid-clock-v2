@@ -150,18 +150,20 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NavalBattleState) -> Option<A
     if now.duration_since(state.last_joy_action).as_millis() > JOY_DELAY_MS {
         let mut moved = false;
 
-        if ctx.input_manager.is_down(UiEvents::UP) && state.cursor_y > 0 {
+        if ctx.input_manager.is_down(UiEvents::UP | UiEvents::KEY_6) && state.cursor_y > 0 {
             state.cursor_y -= 1;
             moved = true;
-        } else if ctx.input_manager.is_down(UiEvents::DOWN) && state.cursor_y < 7 {
+        } else if ctx.input_manager.is_down(UiEvents::DOWN | UiEvents::KEY_5) && state.cursor_y < 7
+        {
             state.cursor_y += 1;
             moved = true;
         }
 
-        if ctx.input_manager.is_down(UiEvents::LEFT) && state.cursor_x > 0 {
+        if ctx.input_manager.is_down(UiEvents::LEFT | UiEvents::KEY_4) && state.cursor_x > 0 {
             state.cursor_x -= 1;
             moved = true;
-        } else if ctx.input_manager.is_down(UiEvents::RIGHT) && state.cursor_x < 7 {
+        } else if ctx.input_manager.is_down(UiEvents::RIGHT | UiEvents::KEY_7) && state.cursor_x < 7
+        {
             state.cursor_x += 1;
             moved = true;
         }
