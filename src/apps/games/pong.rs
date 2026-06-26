@@ -46,7 +46,6 @@ impl Default for PongState {
             enemy_y: 16.0,
             ball_x: 64.0,
             ball_y: 24.0,
-            // 60.0 pixels/sec at 60Hz fixed timestep = exactly 1.0 pixel per frame movement
             ball_vx: 60.0,
             ball_vy: 30.0,
             player_score: 0,
@@ -100,13 +99,15 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PongState) -> Option<App> {
             const TIME_STEP: f32 = 1.0 / 60.0;
             state.accumulator += dt;
 
+            // Define dimensional constants to maintain physics alignment
+            let area_height = 50.0;
+            let paddle_height = 10.0;
+            let ball_size = 2.0;
+            let max_y = area_height - paddle_height;
+            let paddle_speed = 100.0;
+
             // Consume time slices inside fixed intervals to stabilize physics updates
             while state.accumulator >= TIME_STEP {
-                let area_height = 50.0;
-                let paddle_height = 10.0;
-                let max_y = area_height - paddle_height;
-                let paddle_speed = 100.0;
-
                 // Player 1 input tracking
                 if ctx.input_manager.is_down(UiEvents::UP) {
                     state.player_y = (state.player_y - paddle_speed * TIME_STEP).max(0.0);
@@ -120,9 +121,11 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PongState) -> Option<App> {
                     GameMode::PvE => {
                         let enemy_center = state.enemy_y + paddle_height / 2.0;
                         let ai_speed = 50.0;
-                        if state.ball_y > enemy_center && state.enemy_y < max_y {
+                        if state.ball_y + ball_size / 2.0 > enemy_center && state.enemy_y < max_y {
                             state.enemy_y = (state.enemy_y + ai_speed * TIME_STEP).min(max_y);
-                        } else if state.ball_y < enemy_center && state.enemy_y > 0.0 {
+                        } else if state.ball_y + ball_size / 2.0 < enemy_center
+                            && state.enemy_y > 0.0
+                        {
                             state.enemy_y = (state.enemy_y - ai_speed * TIME_STEP).max(0.0);
                         }
                     }
@@ -144,33 +147,42 @@ pub fn update(ctx: &mut UpdateContext, state: &mut PongState) -> Option<App> {
                 if state.ball_y <= 0.0 {
                     state.ball_y = 0.0;
                     state.ball_vy = -state.ball_vy;
-                } else if state.ball_y >= area_height - 2.0 {
-                    state.ball_y = area_height - 2.0;
+                } else if state.ball_y >= area_height - ball_size {
+                    state.ball_y = area_height - ball_size;
                     state.ball_vy = -state.ball_vy;
                 }
 
+                // Pre-calculate vertical center coordinates for standard AABB intersection
+                let ball_center_y = state.ball_y + ball_size / 2.0;
+
                 // Player Left Paddle Collision Bounds
+                // Paddle X layout span: [2.0, 4.0]
                 if state.ball_vx < 0.0
                     && state.ball_x <= 4.0
-                    && state.ball_x >= 1.0
-                    && state.ball_y >= state.player_y
+                    && state.ball_x >= 0.0 // Expanded downward bound to mitigate tunneling at high speeds
+                    && state.ball_y + ball_size >= state.player_y // Complete AABB Vertical intersection check
                     && state.ball_y <= state.player_y + paddle_height
                 {
                     state.ball_vx = -state.ball_vx * 1.05;
-                    state.ball_vy += (state.ball_y - (state.player_y + paddle_height / 2.0)) * 7.5;
-                    state.ball_x = 4.1;
+                    let paddle_center_y = state.player_y + paddle_height / 2.0;
+                    // Deflection vector maps accurately to the absolute center offset of both bodies
+                    state.ball_vy += (ball_center_y - paddle_center_y) * 7.5;
+                    state.ball_x = 4.1; // Snap out to prevent multiple frame overlap ticks
                 }
 
                 // Enemy/P2 Right Paddle Collision Bounds
+                // Paddle X layout span: [124.0, 126.0] (assuming standard 128px court framework width)
                 if state.ball_vx > 0.0
-                    && state.ball_x >= 122.0
-                    && state.ball_x <= 125.0
-                    && state.ball_y >= state.enemy_y
+                    && state.ball_x + ball_size >= 124.0
+                    && state.ball_x <= 128.0 // Expanded upward bound to mitigate tunneling at high speeds
+                    && state.ball_y + ball_size >= state.enemy_y // Complete AABB Vertical intersection check
                     && state.ball_y <= state.enemy_y + paddle_height
                 {
                     state.ball_vx = -state.ball_vx * 1.05;
-                    state.ball_vy += (state.ball_y - (state.enemy_y + paddle_height / 2.0)) * 7.5;
-                    state.ball_x = 121.9;
+                    let paddle_center_y = state.enemy_y + paddle_height / 2.0;
+                    // Deflection vector maps accurately to the absolute center offset of both bodies
+                    state.ball_vy += (ball_center_y - paddle_center_y) * 7.5;
+                    state.ball_x = 123.9 - ball_size; // Snap out cleanly based on exact bounding limits
                 }
 
                 // Point Scoring Cycle Triggers
