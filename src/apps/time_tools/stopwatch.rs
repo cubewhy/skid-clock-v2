@@ -88,9 +88,9 @@ pub fn update(ctx: &UpdateContext, state: &mut StopwatchState) -> Option<App> {
         }
     }
 
-    // Lap List Scrolling: KEY_1 (Up) and KEY_5 (Down)
+    // Lap List Scrolling: KEY_6 (Up) and KEY_5 (Down)
     if !state.laps.is_empty() {
-        if events.contains(UiEvents::KEY_1) {
+        if events.contains(UiEvents::KEY_6) {
             state.selected_lap_index = state.selected_lap_index.saturating_sub(1);
         }
         if events.contains(UiEvents::KEY_5) {
