@@ -52,7 +52,13 @@ where
 
     /// Renders an indeterminate progress bar with a sliding marquee indicator block.
     /// driven directly by the UI monotonic frame tick rate.
-    pub fn indeterminate_progress_bar(&mut self, rect: Rect, label_text: &str, tick: u32) {
+    pub fn indeterminate_progress_bar(
+        &mut self,
+        rect: Rect,
+        label_text: &str,
+        tick: u32,
+        speed: u32,
+    ) {
         // Render informational state string description
         self.font
             .render_aligned(
@@ -81,12 +87,11 @@ where
         if max_fill_width > indicator_width {
             let travel_distance = max_fill_width - indicator_width;
 
-            // Scaled tick adjustments control speed coefficients smoothly
-            let horizontal_speed_step = tick / 2;
             let cycle_bounds = travel_distance * 2;
 
             let offset_x = if cycle_bounds > 0 {
-                let position_step = horizontal_speed_step % cycle_bounds;
+                let total_steps = tick as u64 * speed as u64;
+                let position_step = (total_steps % cycle_bounds as u64) as u32;
                 if position_step < travel_distance {
                     position_step
                 } else {

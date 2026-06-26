@@ -639,7 +639,7 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
             );
         }
         NetState::Scanning => {
-            ui.indeterminate_progress_bar(body_rect, "Scanning WiFi...", state.tick);
+            ui.indeterminate_progress_bar(body_rect, "Scanning WiFi...", state.tick, 2);
         }
         NetState::SelectNetwork => {
             let mut list_items = Vec::new();
