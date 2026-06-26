@@ -14,7 +14,7 @@ use crate::{
 use std::vec::Vec;
 
 use esp_idf_svc::sntp::{SntpConf, SyncStatus};
-use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration};
+use esp_idf_svc::wifi::{AuthMethod, ClientConfiguration, Configuration, WifiDeviceId};
 
 pub struct NetworkSettingsState {
     tick: u32,
@@ -119,7 +119,6 @@ fn spawn_wifi_connect(
 ) {
     let wifi_arc = controller.wifi.clone();
     let state_arc = controller.state.clone();
-    let cache_arc = controller.cache.clone();
 
     std::thread::spawn(move || {
         if let Ok(mut lock) = state_arc.lock() {
@@ -127,49 +126,50 @@ fn spawn_wifi_connect(
         }
 
         match (|| -> anyhow::Result<()> {
-            let mut wifi_lock = wifi_arc
-                .lock()
-                .map_err(|_| anyhow::anyhow!("Wifi lock poisoned"))?;
+            // Scope the configuration lock to drop it immediately before entering the sleep loop
+            {
+                let mut wifi_lock = wifi_arc
+                    .lock()
+                    .map_err(|_| anyhow::anyhow!("Wifi lock poisoned"))?;
 
-            let mut client_config = ClientConfiguration {
-                ssid: ssid.as_str().try_into().unwrap_or_default(),
-                auth_method,
-                ..Default::default()
-            };
+                let mut client_config = ClientConfiguration {
+                    ssid: ssid.as_str().try_into().unwrap_or_default(),
+                    auth_method,
+                    ..Default::default()
+                };
 
-            if let Some(pwd) = password {
-                client_config.password = pwd.as_str().try_into().unwrap_or_default();
-            } else {
-                client_config.password = "".try_into().unwrap_or_default();
+                if let Some(pwd) = password {
+                    client_config.password = pwd.as_str().try_into().unwrap_or_default();
+                } else {
+                    client_config.password = "".try_into().unwrap_or_default();
+                }
+
+                wifi_lock.set_configuration(&Configuration::Client(client_config))?;
+                wifi_lock.start()?;
+                wifi_lock.connect()?;
             }
 
-            wifi_lock.set_configuration(&Configuration::Client(client_config))?;
-            wifi_lock.start()?;
-            wifi_lock.connect()?;
-
+            // Asynchronously poll for Layer 3 IP assignment (DHCP) without holding the mutex lock
             let mut retry = 0;
-            while !wifi_lock.is_connected()? && retry < 20 {
-                std::thread::sleep(std::time::Duration::from_millis(500));
+            let mut has_valid_ip = false;
+
+            while retry < 40 {
+                std::thread::sleep(std::time::Duration::from_millis(250));
+
+                if let Ok(wifi_lock) = wifi_arc.lock()
+                    && let Ok(true) = wifi_lock.is_connected()
+                    && let Ok(ip_info) = wifi_lock.sta_netif().get_ip_info()
+                    && !ip_info.ip.is_unspecified()
+                {
+                    has_valid_ip = true;
+                    break;
+                }
                 retry += 1;
             }
 
-            if !wifi_lock.is_connected()? {
-                log::error!("Station authentication handshake timed out against target SSID.");
-                return Err(anyhow::anyhow!("Timeout"));
+            if !has_valid_ip {
+                return Err(anyhow::anyhow!("DHCP IP lease assignment timeout"));
             }
-
-            let connected_ip = wifi_lock
-                .sta_netif()
-                .get_ip_info()
-                .map(|info| info.ip.to_string())
-                .unwrap_or_else(|_| String::from("0.0.0.0"));
-
-            if let Ok(mut cache_lock) = cache_arc.lock() {
-                cache_lock.is_connected = true;
-                cache_lock.ssid = ssid;
-                cache_lock.ip = connected_ip;
-            }
-
             Ok(())
         })() {
             Ok(_) => {
@@ -277,26 +277,33 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
     state.tick += 1;
     let events = ctx.menu_events;
 
-    // Synchronize UI string buffers using the controller's clean dynamic getters
-    if ctx.network.is_connected() {
-        if let Some(ssid) = ctx.network.get_connected_ssid() {
-            state.connected_ssid = ssid;
-        }
-        if let Some(ip) = ctx.network.get_ip_address() {
-            state.connected_ip = ip;
-        }
-    } else {
-        state.connected_ssid = String::from("Disconnected");
-        state.connected_ip = String::from("0.0.0.0");
-    }
-
+    // Fetch and sync runtime network telemetry asynchronously
     if let Ok(wifi_lock) = ctx.network.wifi.try_lock()
-        && let Ok(mac) = wifi_lock.get_mac(esp_idf_svc::wifi::WifiDeviceId::Sta)
+        && let Ok(connected) = wifi_lock.is_connected()
     {
-        state.connected_mac = format!(
-            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
-            mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
-        );
+        if connected {
+            if let Ok(Configuration::Client(client_cfg)) = wifi_lock.get_configuration() {
+                state.connected_ssid = client_cfg.ssid.to_string();
+            }
+
+            if let Ok(ip_info) = wifi_lock.sta_netif().get_ip_info() {
+                if ip_info.ip.is_unspecified() {
+                    state.connected_ip = String::from("Allocating...");
+                } else {
+                    state.connected_ip = ip_info.ip.to_string();
+                }
+            }
+        } else {
+            state.connected_ssid = String::from("Disconnected");
+            state.connected_ip = String::from("0.0.0.0");
+        }
+
+        if let Ok(mac) = wifi_lock.get_mac(WifiDeviceId::Sta) {
+            state.connected_mac = format!(
+                "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]
+            );
+        }
     }
 
     // Edge-triggered synchronization with the global controller status
