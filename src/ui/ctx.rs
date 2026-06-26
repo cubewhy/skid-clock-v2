@@ -18,10 +18,10 @@ bitflags! {
         const KEY_1     = 1 << 1;
         const KEY_2     = 1 << 2;
         const KEY_3     = 1 << 3;
-        const KEY_4     = 1 << 4;
-        const KEY_5     = 1 << 5;
-        const KEY_6     = 1 << 6;
-        const KEY_7     = 1 << 7; // also KEY_CONFIRM
+        const KEY_4     = 1 << 4; // h
+        const KEY_5     = 1 << 5; // j
+        const KEY_6     = 1 << 6; // k
+        const KEY_7     = 1 << 7; // also l, KEY_CONFIRM
 
         const UP        = 1 << 8;
         const DOWN      = 1 << 9;
