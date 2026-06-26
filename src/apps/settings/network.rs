@@ -119,6 +119,7 @@ fn spawn_wifi_connect(
 ) {
     let wifi_arc = controller.wifi.clone();
     let state_arc = controller.state.clone();
+    let cache_arc = controller.cache.clone();
 
     std::thread::spawn(move || {
         if let Ok(mut lock) = state_arc.lock() {
@@ -156,6 +157,19 @@ fn spawn_wifi_connect(
                 log::error!("Station authentication handshake timed out against target SSID.");
                 return Err(anyhow::anyhow!("Timeout"));
             }
+
+            let connected_ip = wifi_lock
+                .sta_netif()
+                .get_ip_info()
+                .map(|info| info.ip.to_string())
+                .unwrap_or_else(|_| String::from("0.0.0.0"));
+
+            if let Ok(mut cache_lock) = cache_arc.lock() {
+                cache_lock.is_connected = true;
+                cache_lock.ssid = ssid;
+                cache_lock.ip = connected_ip;
+            }
+
             Ok(())
         })() {
             Ok(_) => {

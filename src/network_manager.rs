@@ -1,7 +1,6 @@
 use esp_idf_svc::eventloop::{EspSubscription, EspSystemEventLoop, System};
 use esp_idf_svc::sntp::EspSntp;
-use esp_idf_svc::wifi::{AuthMethod, Configuration, EspWifi, WifiEvent};
-use std::rc::Rc;
+use esp_idf_svc::wifi::{AuthMethod, EspWifi, WifiEvent};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -18,6 +17,15 @@ pub enum NetState {
     Error(&'static str),
 }
 
+/// Lightweight structure storing connection details to completely decouple
+/// the UI polling loops from blocking hardware driver locks.
+#[derive(Default, Clone, Debug)]
+pub struct ConnectionCache {
+    pub is_connected: bool,
+    pub ssid: String,
+    pub ip: String,
+}
+
 /// A globally shareable network interface controller
 #[derive(Clone)]
 pub struct NetworkController {
@@ -25,7 +33,8 @@ pub struct NetworkController {
     pub sntp: Arc<Mutex<Option<EspSntp<'static>>>>,
     pub state: Arc<Mutex<NetState>>,
     pub scan_results: Arc<Mutex<Vec<(String, AuthMethod)>>>,
-    _subscription: Rc<EspSubscription<'static, System>>,
+    pub cache: Arc<Mutex<ConnectionCache>>,
+    _subscription: Arc<EspSubscription<'static, System>>,
 }
 
 impl NetworkController {
@@ -39,12 +48,23 @@ impl NetworkController {
         })?;
 
         let state = Arc::new(Mutex::new(NetState::Idle));
+        let cache = Arc::new(Mutex::new(ConnectionCache::default()));
+
         let state_trigger = state.clone();
+        let cache_trigger = cache.clone();
 
         // Subscribe to system Wi-Fi events to automatically handle disconnections
         let subscription = sys_loop.subscribe::<WifiEvent, _>(move |event| match event {
             WifiEvent::StaDisconnected(_) => {
                 log::warn!("WiFi disconnected event captured from system event loop.");
+
+                // Instantly wipe connection metadata cache cleanly on drop triggers
+                if let Ok(mut cache_lock) = cache_trigger.lock() {
+                    cache_lock.is_connected = false;
+                    cache_lock.ssid.clear();
+                    cache_lock.ip.clear();
+                }
+
                 if let Ok(mut lock) = state_trigger.lock()
                     && matches!(
                         *lock,
@@ -65,53 +85,44 @@ impl NetworkController {
             sntp: Arc::new(Mutex::new(None)),
             state,
             scan_results: Arc::new(Mutex::new(Vec::new())),
-            _subscription: Rc::new(subscription),
+            cache,
+            _subscription: Arc::new(subscription),
         })
     }
 
+    /// Non-blocking evaluation utilizing the local cached state layer.
     pub fn is_connected(&self) -> bool {
-        if let Ok(wifi_lock) = self.wifi.lock() {
-            wifi_lock.is_connected().unwrap_or(false)
-        } else {
-            false
-        }
+        self.cache.lock().map(|c| c.is_connected).unwrap_or(false)
     }
 
-    /// Dynamically fetches the active SSID directly from the underlying driver configuration.
-    /// This avoids state desynchronization and acts as a single source of truth.
+    /// Fetches the active SSID directly from the cache safely without driver locks.
     pub fn get_connected_ssid(&self) -> Option<String> {
-        if !self.is_connected() {
-            return None;
-        }
-
-        let wifi_lock = self.wifi.lock().ok()?;
-        if let Ok(Configuration::Client(client_cfg)) = wifi_lock.get_configuration() {
-            Some(client_cfg.ssid.to_string())
+        let cache_lock = self.cache.lock().ok()?;
+        if cache_lock.is_connected && !cache_lock.ssid.is_empty() {
+            Some(cache_lock.ssid.clone())
         } else {
             None
         }
     }
 
-    /// Dynamically fetches the current IP address assigned to the station interface.
+    /// Fetches the assigned IP address directly from the cache safely without driver locks.
     pub fn get_ip_address(&self) -> Option<String> {
-        if !self.is_connected() {
-            return None;
+        let cache_lock = self.cache.lock().ok()?;
+        if cache_lock.is_connected && !cache_lock.ip.is_empty() {
+            Some(cache_lock.ip.clone())
+        } else {
+            None
         }
-
-        let wifi_lock = self.wifi.lock().ok()?;
-        let ip_info = wifi_lock.sta_netif().get_ip_info().ok()?;
-        Some(ip_info.ip.to_string())
     }
 
-    /// Fetches the current RSSI (Signal Strength in dBm) from the active station interface.
-    /// Returns None if disconnected or if the low-level driver query fails.
+    /// Fetches current RSSI using a non-blocking try_lock configuration.
+    /// If the driver is occupied scanning, it returns None instantly instead of freezing frames.
     pub fn get_rssi(&self) -> Option<i32> {
         if !self.is_connected() {
             return None;
         }
 
-        // Lock to ensure thread-safe hardware telemetry acquisition
-        let _wifi_lock = self.wifi.lock().ok()?;
+        let _wifi_lock = self.wifi.try_lock().ok()?;
 
         let mut ap_info = std::mem::MaybeUninit::<esp_idf_svc::sys::wifi_ap_record_t>::uninit();
         unsafe {
@@ -130,14 +141,10 @@ impl NetworkController {
         }
     }
 
-    /// Dynamically determines and sets the correct fallback state based on hardware status
+    /// Dynamically determines fallback states using non-blocking primitives
     pub fn reset_state(&self) -> NetState {
-        let fallback = if let Ok(wifi_lock) = self.wifi.lock() {
-            if wifi_lock.is_connected().unwrap_or(false) {
-                NetState::Connected
-            } else {
-                NetState::Idle
-            }
+        let fallback = if self.is_connected() {
+            NetState::Connected
         } else {
             NetState::Idle
         };
