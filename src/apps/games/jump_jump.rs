@@ -114,10 +114,16 @@ pub fn update(ctx: &mut UpdateContext, state: &mut JumpJumpState) -> Option<App>
     }
 
     // Evaluate input redirection (Joystick push detection across directions)
-    let joy_active = ctx.input_manager.is_down(UiEvents::UP)
-        || ctx.input_manager.is_down(UiEvents::DOWN)
-        || ctx.input_manager.is_down(UiEvents::LEFT)
-        || ctx.input_manager.is_down(UiEvents::RIGHT);
+    let joy_active = ctx.input_manager.is_down(
+        UiEvents::UP
+            | UiEvents::DOWN
+            | UiEvents::LEFT
+            | UiEvents::RIGHT
+            | UiEvents::KEY_4
+            | UiEvents::KEY_5
+            | UiEvents::KEY_6
+            | UiEvents::KEY_7,
+    );
 
     // Filter latched inputs to guard system actions until inputs clear out
     let mut processed_joy_active = joy_active;
