@@ -34,7 +34,7 @@ pub struct NetworkController {
     pub state: Arc<Mutex<NetState>>,
     pub scan_results: Arc<Mutex<Vec<(String, AuthMethod)>>>,
     pub cache: Arc<Mutex<ConnectionCache>>,
-    _subscription: Arc<EspSubscription<'static, System>>,
+    _subscription: Arc<Mutex<EspSubscription<'static, System>>>,
 }
 
 impl NetworkController {
@@ -86,7 +86,7 @@ impl NetworkController {
             state,
             scan_results: Arc::new(Mutex::new(Vec::new())),
             cache,
-            _subscription: Arc::new(subscription),
+            _subscription: Arc::new(Mutex::new(subscription)),
         })
     }
 
