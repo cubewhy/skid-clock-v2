@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU8, Ordering};
+
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::App,
@@ -7,6 +9,8 @@ use crate::{
         layout::{FlexDirection, FlexNode},
     },
 };
+
+static SAVED_MENU_INDEX: AtomicU8 = AtomicU8::new(0);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum SettingsItem {
@@ -24,9 +28,16 @@ impl SettingsItem {
     }
 }
 
-#[derive(Default)]
 pub struct SettingsMenuState {
     pub selected_index: u8,
+}
+
+impl Default for SettingsMenuState {
+    fn default() -> Self {
+        Self {
+            selected_index: SAVED_MENU_INDEX.load(Ordering::Relaxed),
+        }
+    }
 }
 
 pub fn update(ctx: &UpdateContext, state: &mut SettingsMenuState) -> Option<App> {
@@ -34,6 +45,7 @@ pub fn update(ctx: &UpdateContext, state: &mut SettingsMenuState) -> Option<App>
     let selected_index = &mut state.selected_index;
 
     let max_index = (SettingsItem::ALL.len() - 1) as u8;
+    let mut index_changed = false;
 
     if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT | UiEvents::KEY_4) {
         return Some(App::main_menu());
@@ -44,6 +56,7 @@ pub fn update(ctx: &UpdateContext, state: &mut SettingsMenuState) -> Option<App>
         } else {
             *selected_index = max_index;
         }
+        index_changed = true;
     }
 
     if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
@@ -52,6 +65,7 @@ pub fn update(ctx: &UpdateContext, state: &mut SettingsMenuState) -> Option<App>
         } else {
             *selected_index = 0;
         }
+        index_changed = true;
     }
     if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
         return match SettingsItem::ALL[*selected_index as usize] {
@@ -59,6 +73,11 @@ pub fn update(ctx: &UpdateContext, state: &mut SettingsMenuState) -> Option<App>
             SettingsItem::NetworkSettings => Some(App::network_settings()),
         };
     }
+
+    if index_changed {
+        SAVED_MENU_INDEX.store(*selected_index, Ordering::Relaxed);
+    }
+
     None
 }
 

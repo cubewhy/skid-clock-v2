@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU8, Ordering};
+
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::App,
@@ -8,6 +10,8 @@ use crate::{
         layout::{FlexDirection, FlexNode},
     },
 };
+
+static SAVED_MENU_INDEX: AtomicU8 = AtomicU8::new(0);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TimeToolsItem {
@@ -43,10 +47,18 @@ const BOTTOM_DIVIDER_HEIGHT: u32 = 1;
 const ITEM_HEIGHT: u32 = 10;
 const VISIBLE_COUNT: usize = 4;
 
-#[derive(Default)]
 pub struct TimeToolsMenuState {
     pub selected_index: u8,
     pub tick: u32,
+}
+
+impl Default for TimeToolsMenuState {
+    fn default() -> Self {
+        Self {
+            selected_index: SAVED_MENU_INDEX.load(Ordering::Relaxed),
+            tick: 0,
+        }
+    }
 }
 
 pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App> {
@@ -56,6 +68,7 @@ pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App
     let events = ctx.menu_events;
 
     let max_index = (TimeToolsItem::ALL.len() - 1) as u8;
+    let mut index_changed = false;
 
     if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
         if *selected_index > 0 {
@@ -63,6 +76,7 @@ pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App
         } else {
             *selected_index = max_index;
         }
+        index_changed = true;
     }
 
     if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
@@ -71,6 +85,11 @@ pub fn update(ctx: &UpdateContext, state: &mut TimeToolsMenuState) -> Option<App
         } else {
             *selected_index = 0;
         }
+        index_changed = true;
+    }
+
+    if index_changed {
+        SAVED_MENU_INDEX.store(*selected_index, Ordering::Relaxed);
     }
 
     if events.intersects(UiEvents::KEY_ESC | UiEvents::LEFT | UiEvents::KEY_4) {
