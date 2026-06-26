@@ -344,11 +344,11 @@ impl<'a> InputManager<'a> {
     }
 
     pub fn just_pressed(&self, event: UiEvents) -> bool {
-        self.menu_events.contains(event)
+        self.menu_events.intersects(event)
     }
 
     pub fn just_released(&self, event: UiEvents) -> bool {
-        self.released_events.contains(event)
+        self.released_events.intersects(event)
     }
 
     pub fn get_raw_events(&self) -> UiEvents {
