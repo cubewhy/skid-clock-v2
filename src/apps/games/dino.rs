@@ -100,7 +100,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
     }
 
     // Input state decoding logic matching joystick axes
-    if ctx.input_manager.is_down(UiEvents::DOWN) {
+    if ctx.input_manager.is_down(UiEvents::DOWN | UiEvents::KEY_5) {
         if !state.is_jumping {
             state.is_ducking = true;
         } else {
@@ -110,7 +110,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
         state.is_ducking = false;
     }
 
-    if ctx.input_manager.is_down(UiEvents::UP) && !state.is_jumping && !state.is_ducking {
+    if ctx.input_manager.is_down(UiEvents::UP | UiEvents::KEY_6)
+        && !state.is_jumping
+        && !state.is_ducking
+    {
         state.dino_vy = -0.17;
         state.is_jumping = true;
     }
