@@ -166,8 +166,8 @@ pub fn update(ctx: &mut UpdateContext, state: &mut TetrisState) -> Option<App> {
         return None;
     }
 
-    let moving_left = ctx.input_manager.is_down(UiEvents::LEFT);
-    let moving_right = ctx.input_manager.is_down(UiEvents::RIGHT);
+    let moving_left = ctx.input_manager.is_down(UiEvents::LEFT | UiEvents::KEY_4);
+    let moving_right = ctx.input_manager.is_down(UiEvents::RIGHT | UiEvents::KEY_7);
 
     if moving_left && !state.check_collision(state.px - 1, state.py, &state.piece_matrix) {
         state.px -= 1;
@@ -176,8 +176,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut TetrisState) -> Option<App> {
         state.px += 1;
     }
 
-    let up_pressed =
-        ctx.input_manager.is_down(UiEvents::UP) || ctx.input_manager.is_down(UiEvents::CONFIRM);
+    let up_pressed = ctx.input_manager.is_down(UiEvents::UP | UiEvents::KEY_6);
     if up_pressed {
         if !state.rotate_locked {
             state.rotate_matrix();
@@ -187,7 +186,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut TetrisState) -> Option<App> {
         state.rotate_locked = false;
     }
 
-    let drop_delay = if ctx.input_manager.is_down(UiEvents::DOWN) && !moving_left && !moving_right {
+    let drop_delay = if ctx.input_manager.is_down(UiEvents::DOWN | UiEvents::KEY_5)
+        && !moving_left
+        && !moving_right
+    {
         40
     } else {
         700
