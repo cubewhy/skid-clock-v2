@@ -110,25 +110,28 @@ pub fn update(ctx: &mut UpdateContext, state: &mut TimeSettingsState) -> Option<
 
     if ctx
         .menu_events
-        .intersects(UiEvents::KEY_7 | UiEvents::CONFIRM)
+        .intersects(UiEvents::KEY_3 | UiEvents::CONFIRM)
     {
         let _ = ctx.rtc.set_time(&state.get_datetime());
         let _ = sync_time(ctx.rtc);
         return Some(App::settings_menu());
     }
 
-    if ctx.menu_events.contains(UiEvents::LEFT) {
+    if ctx.menu_events.intersects(UiEvents::LEFT | UiEvents::KEY_4) {
         state.selected_field = if state.selected_field == 0 {
             5
         } else {
             state.selected_field - 1
         };
     }
-    if ctx.menu_events.contains(UiEvents::RIGHT) {
+    if ctx
+        .menu_events
+        .intersects(UiEvents::RIGHT | UiEvents::KEY_7)
+    {
         state.selected_field = (state.selected_field + 1) % 6;
     }
 
-    if ctx.menu_events.contains(UiEvents::UP) {
+    if ctx.menu_events.intersects(UiEvents::UP | UiEvents::KEY_5) {
         match state.selected_field {
             0 => {
                 state.year = if state.year >= 2099 {
@@ -161,7 +164,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut TimeSettingsState) -> Option<
         }
     }
 
-    if ctx.menu_events.contains(UiEvents::DOWN) {
+    if ctx.menu_events.intersects(UiEvents::DOWN | UiEvents::KEY_6) {
         match state.selected_field {
             0 => {
                 state.year = if state.year <= 2000 {
