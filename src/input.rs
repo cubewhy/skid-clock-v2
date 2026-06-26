@@ -34,19 +34,54 @@ pub struct JoystickData {
 }
 
 impl JoystickData {
-    pub fn get_events(&self) -> UiEvents {
+    /// Evaluates stick vectors into UiEvents using hysteresis to prevent border jittering.
+    pub fn get_events(&self, prev_events: UiEvents) -> UiEvents {
         let mut events = UiEvents::empty();
 
-        if self.y > 0.5 {
-            events.insert(UiEvents::UP);
-        } else if self.y < -0.5 {
-            events.insert(UiEvents::DOWN);
+        // Hysteresis thresholds to eliminate analog signal noise around boundaries
+        let press_thresh: f32 = 0.6;
+        let release_thresh: f32 = 0.4;
+
+        // Y-Axis evaluation (UP / DOWN)
+        if prev_events.contains(UiEvents::UP) {
+            if self.y > release_thresh {
+                events.insert(UiEvents::UP);
+            }
+        } else {
+            if self.y > press_thresh {
+                events.insert(UiEvents::UP);
+            }
         }
 
-        if self.x < -0.5 {
-            events.insert(UiEvents::RIGHT);
-        } else if self.x > 0.5 {
-            events.insert(UiEvents::LEFT);
+        if prev_events.contains(UiEvents::DOWN) {
+            if self.y < -release_thresh {
+                events.insert(UiEvents::DOWN);
+            }
+        } else {
+            if self.y < -press_thresh {
+                events.insert(UiEvents::DOWN);
+            }
+        }
+
+        // X-Axis evaluation (LEFT / RIGHT) - preserving original mapped polarity
+        if prev_events.contains(UiEvents::RIGHT) {
+            if self.x < -release_thresh {
+                events.insert(UiEvents::RIGHT);
+            }
+        } else {
+            if self.x < -press_thresh {
+                events.insert(UiEvents::RIGHT);
+            }
+        }
+
+        if prev_events.contains(UiEvents::LEFT) {
+            if self.x > release_thresh {
+                events.insert(UiEvents::LEFT);
+            }
+        } else {
+            if self.x > press_thresh {
+                events.insert(UiEvents::LEFT);
+            }
         }
 
         if self.is_pressed {
@@ -120,6 +155,7 @@ pub struct InputManager<'a> {
     released_events: UiEvents,
 
     last_scan_time: Instant,
+    debounce_ms: [u32; 13], // Tracks bounce duration for each UI event
     hold_times_ms: [u32; 13],
     next_trigger_ms: [u32; 13],
 }
@@ -127,6 +163,7 @@ pub struct InputManager<'a> {
 impl<'a> InputManager<'a> {
     pub const INITIAL_DELAY_MS: u32 = 600;
     pub const REPEAT_RATE_MS: u32 = 50;
+    pub const DEBOUNCE_TIME_MS: u32 = 30; // Standard stable window window for switches
 
     pub fn build(
         keyboard: crate::pin_config::KeyboardMatrixConfig,
@@ -176,12 +213,17 @@ impl<'a> InputManager<'a> {
             menu_events: UiEvents::empty(),
             released_events: UiEvents::empty(),
             last_scan_time: Instant::now(),
+            debounce_ms: [0; 13],
             hold_times_ms: [0; 13],
             next_trigger_ms: [0; 13],
         })
     }
 
     pub fn scan(&mut self) -> Result<(), anyhow::Error> {
+        let now = Instant::now();
+        let delta_ms = now.duration_since(self.last_scan_time).as_millis() as u32;
+        self.last_scan_time = now;
+
         self.previous_events = self.current_events;
         self.key_states = KeyStates::default();
 
@@ -210,12 +252,31 @@ impl<'a> InputManager<'a> {
         }
 
         let joy_data = self.read_joystick();
-        self.current_events = self.key_states.get_events() | joy_data.get_events();
+        let raw_events = self.key_states.get_events() | joy_data.get_events(self.current_events);
 
-        let now = Instant::now();
-        let delta_ms = now.duration_since(self.last_scan_time).as_millis() as u32;
-        self.last_scan_time = now;
+        for (i, &event) in ALL_EVENTS.iter().enumerate() {
+            let is_raw_down = raw_events.contains(event);
+            let is_stable_down = self.current_events.contains(event);
 
+            if is_raw_down != is_stable_down {
+                // State difference detected, accumulate bounce time
+                self.debounce_ms[i] = self.debounce_ms[i].saturating_add(delta_ms);
+                if self.debounce_ms[i] >= Self::DEBOUNCE_TIME_MS {
+                    // State has stabilized long enough, apply change
+                    if is_raw_down {
+                        self.current_events.insert(event);
+                    } else {
+                        self.current_events.remove(event);
+                    }
+                    self.debounce_ms[i] = 0;
+                }
+            } else {
+                // Input is consistent with the current stable state, reset counter
+                self.debounce_ms[i] = 0;
+            }
+        }
+
+        // 4. Handle Menu Multi-click / Hold Repeat Logic based on Stabilized Events
         self.menu_events = UiEvents::empty();
         let mut local_released = UiEvents::empty();
 
@@ -227,10 +288,10 @@ impl<'a> InputManager<'a> {
 
                 self.hold_times_ms[i] = self.hold_times_ms[i].saturating_add(delta_ms);
 
-                let raw_just_pressed =
+                let just_pressed =
                     self.current_events.contains(event) && !self.previous_events.contains(event);
 
-                if raw_just_pressed {
+                if just_pressed {
                     self.menu_events.insert(event);
                 } else if self.hold_times_ms[i] >= self.next_trigger_ms[i] {
                     self.menu_events.insert(event);
