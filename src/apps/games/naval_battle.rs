@@ -135,7 +135,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NavalBattleState) -> Option<A
     }
 
     let clicked =
-        ctx.input_manager.is_down(UiEvents::CONFIRM) || ctx.input_manager.is_down(UiEvents::KEY_7);
+        ctx.input_manager.is_down(UiEvents::CONFIRM) || ctx.input_manager.is_down(UiEvents::KEY_3);
 
     if state.winner != 0 {
         if clicked {
@@ -173,7 +173,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NavalBattleState) -> Option<A
         }
     }
 
-    // Fire command interceptor (Accepts either CONFIRM or KEY_7 input mapping)
+    // Fire command interceptor
     if clicked {
         let cx = state.cursor_x as usize;
         let cy = state.cursor_y as usize;
