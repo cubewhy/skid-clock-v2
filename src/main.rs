@@ -14,7 +14,7 @@ use crate::{
     pin_config::{
         I2cDisplayPinConfig, JoyPinConfig, KeyboardMatrixConfig, PinConfig, RtcPinConfig,
     },
-    rtc::{ds1302::Ds1302, sync_time},
+    rtc::{ds1302::Ds1302, init_timezone, sync_rtc_to_system},
     ui::UiEvents,
 };
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::BinaryColor};
@@ -96,7 +96,7 @@ fn main() -> anyhow::Result<()> {
     };
     rtc_driver.init()?;
 
-    sync_time(&mut rtc_driver)?;
+    sync_rtc_to_system(&mut rtc_driver)?;
 
     let mut input_manager = InputManager::build(
         pin_config.keyboard,
@@ -146,6 +146,8 @@ fn main() -> anyhow::Result<()> {
     let mut active_app = App::Clock;
 
     let shared_events = Arc::new(Mutex::new(Vec::<UiEvents>::new()));
+
+    init_timezone();
 
     loop {
         input_manager.scan().unwrap();

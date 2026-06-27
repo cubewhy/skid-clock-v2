@@ -1,6 +1,6 @@
 use crate::display::UnifiedDisplay;
 use crate::network_manager::{NetState, NetworkController};
-use crate::rtc::sync_time;
+use crate::rtc::sync_system_to_rtc;
 use crate::ui::widgets::keyboard::KeyboardState;
 use crate::{
     app_context::AppContext,
@@ -231,7 +231,14 @@ fn spawn_ntp_sync(controller: &NetworkController) {
             }
 
             match esp_idf_svc::sntp::EspSntp::new(&config) {
-                Ok(sntp_instance) => *sntp_lock = Some(sntp_instance),
+                Ok(sntp_instance) => {
+                    *sntp_lock = Some(sntp_instance);
+                    unsafe {
+                        esp_idf_svc::sys::sntp_set_sync_mode(
+                            esp_idf_svc::sys::sntp_sync_mode_t_SNTP_SYNC_MODE_IMMED,
+                        );
+                    }
+                }
                 Err(e) => {
                     log::error!("CRITICAL: SNTP engine constructor failed: {:?}", e);
                     if let Ok(mut lock) = state_arc.lock() {
@@ -240,6 +247,12 @@ fn spawn_ntp_sync(controller: &NetworkController) {
                     return;
                 }
             }
+        }
+
+        unsafe {
+            esp_idf_svc::sys::sntp_set_sync_status(
+                esp_idf_svc::sys::sntp_sync_status_t_SNTP_SYNC_STATUS_RESET,
+            );
         }
 
         let mut retry = 0;
@@ -500,7 +513,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
         }
         NetState::NtpSuccess => {
             if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7) {
-                let _ = sync_time(ctx.rtc);
+                let _ = sync_system_to_rtc(ctx.rtc);
                 return Some(App::main_menu());
             }
         }

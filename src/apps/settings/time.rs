@@ -1,5 +1,5 @@
 use crate::display::UnifiedDisplay;
-use crate::rtc::{UnifiedRtc, sync_time};
+use crate::rtc::{UnifiedRtc, sync_system_to_rtc};
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::App,
@@ -113,7 +113,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut TimeSettingsState) -> Option<
         .intersects(UiEvents::KEY_3 | UiEvents::CONFIRM)
     {
         let _ = ctx.rtc.set_time(&state.get_datetime());
-        let _ = sync_time(ctx.rtc);
+        let _ = sync_system_to_rtc(ctx.rtc);
         return Some(App::settings_menu());
     }
 
