@@ -9,6 +9,7 @@ pub enum NetState {
     Idle,
     Scanning,
     SelectNetwork,
+    ConfirmConnect,
     InputSSID,
     InputPassword,
     Connecting,

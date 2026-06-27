@@ -436,6 +436,11 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
             NetState::Idle => {
                 return Some(App::settings_menu());
             }
+            NetState::ConfirmConnect => {
+                state.net_state = NetState::SelectNetwork;
+                state.menu_index = 0;
+                return None;
+            }
             _ => {
                 state.net_state = NetState::Idle;
                 state.menu_index = 0;
@@ -503,6 +508,7 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                 }
             }
         }
+
         NetState::SelectNetwork => {
             let total_items = state.scan_list.len() + 1;
             if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
@@ -529,29 +535,60 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                     if *auth == AuthMethod::None {
                         spawn_wifi_connect(ctx.network, state.selected_ssid.clone(), None, *auth);
                     } else {
-                        // Check if memory storage holds matching vault key
-                        let saved_pwd = if let Ok(sm) = ctx.network.secret_manager.lock() {
-                            sm.get_password(ssid).unwrap_or(None)
+                        let has_saved = if let Ok(sm) = ctx.network.secret_manager.lock() {
+                            sm.get_password(ssid).unwrap_or(None).is_some()
                         } else {
-                            None
+                            false
                         };
 
-                        if let Some(pwd) = saved_pwd {
-                            // Run auto-connection pathway directly bypassing keyboard UI layout
-                            spawn_wifi_connect(
-                                ctx.network,
-                                state.selected_ssid.clone(),
-                                Some(pwd),
-                                state.selected_auth,
-                            );
+                        if has_saved {
+                            state.net_state = NetState::ConfirmConnect;
+                            ctx.network.set_state(NetState::ConfirmConnect);
+                            state.last_global_state = Some(NetState::ConfirmConnect);
+                            state.menu_index = 0;
                         } else {
-                            // Drop into keyboard prompt setup
                             state.net_state = NetState::InputPassword;
                             ctx.network.set_state(NetState::InputPassword);
                             state.last_global_state = Some(NetState::InputPassword);
                             state.kb_state = KeyboardState::new(64);
                         }
                     }
+                }
+            }
+        }
+
+        NetState::ConfirmConnect => {
+            if events.intersects(UiEvents::UP | UiEvents::KEY_6) {
+                state.menu_index = if state.menu_index == 0 { 1 } else { 0 };
+            }
+            if events.intersects(UiEvents::DOWN | UiEvents::KEY_5) {
+                state.menu_index = (state.menu_index + 1) % 2;
+            }
+            if events.intersects(UiEvents::CONFIRM | UiEvents::KEY_7 | UiEvents::RIGHT) {
+                match state.menu_index {
+                    0 => {
+                        let saved_pwd = if let Ok(sm) = ctx.network.secret_manager.lock() {
+                            sm.get_password(&state.selected_ssid).unwrap_or(None)
+                        } else {
+                            None
+                        };
+                        spawn_wifi_connect(
+                            ctx.network,
+                            state.selected_ssid.clone(),
+                            saved_pwd,
+                            state.selected_auth,
+                        );
+                    }
+                    1 => {
+                        if let Ok(mut sm) = ctx.network.secret_manager.lock() {
+                            let _ = sm.delete_password(&state.selected_ssid);
+                        }
+                        state.net_state = NetState::SelectNetwork;
+                        ctx.network.set_state(NetState::SelectNetwork);
+                        state.last_global_state = Some(NetState::SelectNetwork);
+                        state.menu_index = 0;
+                    }
+                    _ => {}
                 }
             }
         }
@@ -727,6 +764,30 @@ pub fn draw(ctx: &mut AppContext, state: &NetworkSettingsState) {
                 &refs,
                 state.menu_index,
                 4,
+                12,
+                |ui_ctx, r, text, sel| {
+                    if sel {
+                        ui_ctx.label(r, &format!("> {}", text)).draw();
+                    } else {
+                        ui_ctx.label(r, &format!("  {}", text)).draw();
+                    }
+                },
+            );
+        }
+        NetState::ConfirmConnect => {
+            let options = ["Connect Network", "Forget Network"];
+
+            ui.label(
+                body_rect.offset(0, 2),
+                &format!("SSID: {}", state.selected_ssid),
+            )
+            .draw();
+
+            ui.scroll_list(
+                body_rect.offset(0, 16),
+                &options,
+                state.menu_index,
+                2,
                 12,
                 |ui_ctx, r, text, sel| {
                     if sel {
