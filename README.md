@@ -35,7 +35,7 @@
 > 如果你要3D 打印键帽: [Printables](https://www.printables.com/model/399607-complete-cherry-mx-stem-keycap-set-optimized-for-3)
 
 - 下载 FreeCAD
-- 下载 [工程文件](./models/skid-clock.FCStd)
+- 下载 [工程文件](./models/skid-clock.FCStd) [Printables](https://www.printables.com/model/1765657-skid-clock)
 - 导出为 `.3mf` 或者 `.step`
 - 用切片软件导出 GCode
 - 发送到打印机, 打印!
