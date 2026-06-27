@@ -85,7 +85,10 @@ pub fn update(ctx: &mut UpdateContext, state: &mut DinoState) -> Option<App> {
     let now_ms = now.duration_since(state.base_time).as_millis() as u32;
 
     if state.phase == GamePhase::GameOver {
-        if ctx.input_manager.is_down(UiEvents::KEY_7) || ctx.input_manager.is_down(UiEvents::UP) {
+        if ctx
+            .input_manager
+            .is_down(UiEvents::KEY_7 | UiEvents::KEY_6 | UiEvents::UP)
+        {
             state.reset_game();
         }
         return None;
