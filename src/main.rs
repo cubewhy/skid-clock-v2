@@ -40,6 +40,7 @@ pub mod input;
 pub mod network_manager;
 pub mod pin_config;
 pub mod rtc;
+pub mod secret_manager;
 pub mod ui;
 
 fn main() -> anyhow::Result<()> {

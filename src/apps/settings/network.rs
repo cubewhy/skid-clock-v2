@@ -119,14 +119,17 @@ fn spawn_wifi_connect(
 ) {
     let wifi_arc = controller.wifi.clone();
     let state_arc = controller.state.clone();
+    let secret_manager_arc = controller.secret_manager.clone(); // Clone handle
 
     std::thread::spawn(move || {
         if let Ok(mut lock) = state_arc.lock() {
             *lock = NetState::Connecting;
         }
 
+        let ssid_clone = ssid.clone();
+        let password_clone = password.clone();
+
         match (|| -> anyhow::Result<()> {
-            // Scope the configuration lock to drop it immediately before entering the sleep loop
             {
                 let mut wifi_lock = wifi_arc
                     .lock()
@@ -138,7 +141,7 @@ fn spawn_wifi_connect(
                     ..Default::default()
                 };
 
-                if let Some(pwd) = password {
+                if let Some(ref pwd) = password {
                     client_config.password = pwd.as_str().try_into().unwrap_or_default();
                 } else {
                     client_config.password = "".try_into().unwrap_or_default();
@@ -149,7 +152,6 @@ fn spawn_wifi_connect(
                 wifi_lock.connect()?;
             }
 
-            // Asynchronously poll for Layer 3 IP assignment (DHCP) without holding the mutex lock
             let mut retry = 0;
             let mut has_valid_ip = false;
 
@@ -176,10 +178,21 @@ fn spawn_wifi_connect(
                 if let Ok(mut lock) = state_arc.lock() {
                     *lock = NetState::Connected;
                 }
+                // Save password on successful verification
+                if let Some(pwd) = password_clone
+                    && let Ok(mut sm) = secret_manager_arc.lock()
+                    && let Err(e) = sm.save_password(&ssid_clone, &pwd)
+                {
+                    log::error!("Failed to save verified password: {:?}", e);
+                }
             }
             Err(_) => {
                 if let Ok(mut lock) = state_arc.lock() {
                     *lock = NetState::Error("Conn Failed");
+                }
+                // Wipe cache record on failure to handle out-of-sync credentials gracefully
+                if let Ok(mut sm) = secret_manager_arc.lock() {
+                    let _ = sm.delete_password(&ssid_clone);
                 }
             }
         }
@@ -379,10 +392,27 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
             let entered_text = std::mem::take(&mut state.kb_state.text);
             if state.net_state == NetState::InputSSID {
                 state.selected_ssid = entered_text;
-                state.net_state = NetState::InputPassword;
-                ctx.network.set_state(NetState::InputPassword);
-                state.last_global_state = Some(NetState::InputPassword);
-                state.kb_state = KeyboardState::new(64);
+
+                // For manual hidden networks, check if we already have a saved password
+                let saved_pwd = if let Ok(sm) = ctx.network.secret_manager.lock() {
+                    sm.get_password(&state.selected_ssid).unwrap_or(None)
+                } else {
+                    None
+                };
+
+                if let Some(pwd) = saved_pwd {
+                    spawn_wifi_connect(
+                        ctx.network,
+                        state.selected_ssid.clone(),
+                        Some(pwd),
+                        state.selected_auth,
+                    );
+                } else {
+                    state.net_state = NetState::InputPassword;
+                    ctx.network.set_state(NetState::InputPassword);
+                    state.last_global_state = Some(NetState::InputPassword);
+                    state.kb_state = KeyboardState::new(64);
+                }
             } else {
                 let pwd = if entered_text.is_empty() {
                     None
@@ -495,13 +525,32 @@ pub fn update(ctx: &mut UpdateContext, state: &mut NetworkSettingsState) -> Opti
                     let (ssid, auth) = &state.scan_list[state.menu_index];
                     state.selected_ssid = ssid.clone();
                     state.selected_auth = *auth;
+
                     if *auth == AuthMethod::None {
                         spawn_wifi_connect(ctx.network, state.selected_ssid.clone(), None, *auth);
                     } else {
-                        state.net_state = NetState::InputPassword;
-                        ctx.network.set_state(NetState::InputPassword);
-                        state.last_global_state = Some(NetState::InputPassword);
-                        state.kb_state = KeyboardState::new(64);
+                        // Check if memory storage holds matching vault key
+                        let saved_pwd = if let Ok(sm) = ctx.network.secret_manager.lock() {
+                            sm.get_password(ssid).unwrap_or(None)
+                        } else {
+                            None
+                        };
+
+                        if let Some(pwd) = saved_pwd {
+                            // Run auto-connection pathway directly bypassing keyboard UI layout
+                            spawn_wifi_connect(
+                                ctx.network,
+                                state.selected_ssid.clone(),
+                                Some(pwd),
+                                state.selected_auth,
+                            );
+                        } else {
+                            // Drop into keyboard prompt setup
+                            state.net_state = NetState::InputPassword;
+                            ctx.network.set_state(NetState::InputPassword);
+                            state.last_global_state = Some(NetState::InputPassword);
+                            state.kb_state = KeyboardState::new(64);
+                        }
                     }
                 }
             }

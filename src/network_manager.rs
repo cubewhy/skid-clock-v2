@@ -1,3 +1,4 @@
+use crate::secret_manager::SecretManager;
 use esp_idf_svc::eventloop::{EspSubscription, EspSystemEventLoop, System};
 use esp_idf_svc::sntp::EspSntp;
 use esp_idf_svc::wifi::{AuthMethod, EspWifi, WifiEvent};
@@ -34,6 +35,8 @@ pub struct NetworkController {
     pub state: Arc<Mutex<NetState>>,
     pub scan_results: Arc<Mutex<Vec<(String, AuthMethod)>>>,
     pub cache: Arc<Mutex<ConnectionCache>>,
+    // Secure non-volatile credentials vault
+    pub secret_manager: Arc<Mutex<SecretManager>>,
     _subscription: Arc<Mutex<EspSubscription<'static, System>>>,
 }
 
@@ -43,6 +46,11 @@ impl NetworkController {
         sys_loop: EspSystemEventLoop,
         nvs: esp_idf_svc::nvs::EspDefaultNvsPartition,
     ) -> anyhow::Result<Self> {
+        // Initialize the SecretManager using a clone of the default NVS partition
+        let secret_manager = SecretManager::new(nvs.clone()).inspect_err(|e| {
+            log::error!("Failed to initialize secure SecretManager layer: {:?}", e);
+        })?;
+
         let wifi = EspWifi::new(modem, sys_loop.clone(), Some(nvs)).inspect_err(|&e| {
             log::error!("Failed to initialize hardware EspWifi driver: {:?}", e);
         })?;
@@ -86,6 +94,7 @@ impl NetworkController {
             state,
             scan_results: Arc::new(Mutex::new(Vec::new())),
             cache,
+            secret_manager: Arc::new(Mutex::new(secret_manager)),
             _subscription: Arc::new(Mutex::new(subscription)),
         })
     }
@@ -116,7 +125,6 @@ impl NetworkController {
     }
 
     /// Fetches current RSSI using a non-blocking try_lock configuration.
-    /// If the driver is occupied scanning, it returns None instantly instead of freezing frames.
     pub fn get_rssi(&self) -> Option<i32> {
         if !self.is_connected() {
             return None;
