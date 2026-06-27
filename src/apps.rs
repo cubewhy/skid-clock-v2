@@ -1,6 +1,7 @@
 use crate::{
     app_context::{AppContext, UpdateContext},
     apps::{
+        calculator::CalculatorState,
         games::{
             brick::{self, BrickState},
             dino::{self, DinoState},
@@ -33,6 +34,7 @@ use crate::{
     },
 };
 
+mod calculator;
 mod clock;
 mod games;
 mod main_menu;
@@ -46,6 +48,8 @@ pub enum App {
     Stopwatch(StopwatchState),
     Countdown(CountdownState),
     Pomodoro(PomodoroState),
+
+    Calculator(CalculatorState),
 
     GamesMenu(GamesMenuState),
     Snake(SnakeState),
@@ -81,6 +85,7 @@ impl App {
             App::Stopwatch(state) => stopwatch::update(ctx, state),
             App::Countdown(state) => countdown::update(ctx, state),
             App::Pomodoro(state) => pomodoro::update(ctx, state),
+            App::Calculator(state) => calculator::update(ctx, state),
             App::GamesMenu(state) => games::menu::update(ctx, state),
             App::Snake(state) => snake::update(ctx, state),
             App::Tetris(state) => tetris::update(ctx, state),
@@ -114,6 +119,7 @@ impl App {
             App::Stopwatch(state) => stopwatch::draw(ctx, state),
             App::Countdown(state) => countdown::draw(ctx, state),
             App::Pomodoro(state) => pomodoro::draw(ctx, state),
+            App::Calculator(state) => calculator::draw(ctx, state),
             App::GamesMenu(state) => games::menu::draw(ctx, state),
             App::Snake(state) => snake::draw(ctx, state),
             App::Tetris(state) => tetris::draw(ctx, state),
@@ -246,5 +252,9 @@ impl App {
 
     fn pacman_game() -> App {
         Self::Pacman(Default::default())
+    }
+
+    pub fn calculator() -> Self {
+        Self::Calculator(Default::default())
     }
 }

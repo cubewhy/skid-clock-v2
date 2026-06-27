@@ -18,6 +18,7 @@ pub enum MainMenuItem {
     Clock,
     TimeTools,
     ArcadeGames,
+    Calculator,
     Settings,
 }
 
@@ -26,6 +27,7 @@ impl MainMenuItem {
         Self::Clock,
         Self::TimeTools,
         Self::ArcadeGames,
+        Self::Calculator,
         Self::Settings,
     ];
 
@@ -34,6 +36,7 @@ impl MainMenuItem {
             Self::Clock => "Realtime Clock",
             Self::TimeTools => "Time Tools",
             Self::ArcadeGames => "Arcade Games",
+            Self::Calculator => "Calculator",
             Self::Settings => "Settings",
         }
     }
@@ -43,6 +46,7 @@ impl MainMenuItem {
             Self::Clock => App::Clock,
             Self::TimeTools => App::time_tools_menu(),
             Self::ArcadeGames => App::games_menu(),
+            Self::Calculator => App::calculator(),
             Self::Settings => App::settings_menu(),
         }
     }
