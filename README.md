@@ -32,6 +32,8 @@
 
 ### 制作外壳 (3D打印)
 
+> 如果你要3D 打印键帽: [Printables](https://www.printables.com/model/399607-complete-cherry-mx-stem-keycap-set-optimized-for-3)
+
 - 下载 FreeCAD
 - 下载 [工程文件](./models/skid-clock.FCStd)
 - 导出为 `.3mf` 或者 `.step`
