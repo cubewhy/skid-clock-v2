@@ -40,8 +40,11 @@ impl<'a, D> Ui<'a, D>
 where
     D: DrawTarget<Color = BinaryColor>,
 {
-    pub fn new(target: &'a mut D, font: &'a FontRenderer) -> Self {
-        Self { target, font }
+    pub fn new(target: &'a mut D, default_font: &'a FontRenderer) -> Self {
+        Self {
+            target,
+            font: default_font,
+        }
     }
 
     /// Draw an rect (without fill)
