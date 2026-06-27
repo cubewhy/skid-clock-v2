@@ -12,7 +12,6 @@ use u8g2_fonts::types::{HorizontalAlignment, VerticalPosition};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CalcMode {
-    Standard,
     Scientific,
     Programmer,
     Converter,
@@ -21,7 +20,6 @@ pub enum CalcMode {
 impl CalcMode {
     pub fn name(&self) -> &'static str {
         match self {
-            CalcMode::Standard => "STANDARD",
             CalcMode::Scientific => "SCIENTIFIC",
             CalcMode::Programmer => "PROGRAMMER",
             CalcMode::Converter => "CONVERTER",
@@ -65,7 +63,7 @@ impl Default for CalculatorState {
             tick: 0,
             expr: String::new(),
             result: String::from("0"),
-            current_mode: CalcMode::Standard,
+            current_mode: CalcMode::Scientific,
             programmer_base: NumBase::Dec,
             current_layer: 0,
             cursor_row: 0,
@@ -77,13 +75,6 @@ impl Default for CalculatorState {
 /// Dynamic Key Matrix Provider based on Modes and Layers
 fn get_grid(mode: CalcMode, layer: usize) -> [[&'static str; 4]; 5] {
     match mode {
-        CalcMode::Standard => [
-            ["C", "(", ")", "/"],
-            ["7", "8", "9", "*"],
-            ["4", "5", "6", "-"],
-            ["1", "2", "3", "+"],
-            ["0", ".", "Del", "="],
-        ],
         CalcMode::Scientific => {
             if layer == 0 {
                 [
@@ -435,10 +426,9 @@ pub fn update(ctx: &UpdateContext, state: &mut CalculatorState) -> Option<App> {
     // Mode Rotation Toggle Engine [KEY_1]
     if events.intersects(UiEvents::KEY_1) {
         state.current_mode = match state.current_mode {
-            CalcMode::Standard => CalcMode::Scientific,
             CalcMode::Scientific => CalcMode::Programmer,
             CalcMode::Programmer => CalcMode::Converter,
-            CalcMode::Converter => CalcMode::Standard,
+            CalcMode::Converter => CalcMode::Scientific,
         };
         state.current_layer = 0;
         state.expr.clear();
